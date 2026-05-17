@@ -42,12 +42,18 @@ const iconByGameId: Record<string, ReactNode> = {
 
 function GameCard({ game, isSelected, onSelect }: GameCardProps) {
   const isDisabled = !game.isAvailable;
+  const accentBackground = `${game.accentColor}22`;
 
   return (
     <button
       type="button"
-      className={`game-card${isSelected ? ' is-selected' : ''}${isDisabled ? ' is-disabled' : ''}`}
-      style={{ ['--card-accent' as string]: game.accentColor }}
+      className="rounded-[12px] border p-[22px] text-left text-[#f5f7ff] transition duration-200 enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed"
+      style={{
+        borderColor: isSelected ? game.accentColor : 'rgba(58,58,78,0.72)',
+        backgroundImage: 'linear-gradient(180deg, rgba(28,28,40,0.95), rgba(23,23,33,0.95))',
+        boxShadow: isSelected ? `0 0 0 1px ${game.accentColor} inset` : undefined,
+        opacity: isDisabled ? 0.62 : 1,
+      }}
       onClick={() => {
         if (!isDisabled) {
           onSelect(game.id);
@@ -55,9 +61,14 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
       }}
       disabled={isDisabled}
     >
-      <div className="game-icon">{iconByGameId[game.id]}</div>
-      <h2 className="game-title">{game.name}</h2>
-      <p className="game-description">{game.description}</p>
+      <div
+        className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[14px]"
+        style={{ color: game.accentColor, backgroundColor: accentBackground }}
+      >
+        {iconByGameId[game.id]}
+      </div>
+      <h2 className="m-0 text-[1.95rem] font-bold tracking-[-0.04em]">{game.name}</h2>
+      <p className="mb-5 mt-1.5 text-white/40">{game.description}</p>
       {game.isAvailable ? (
         <Badge variant="success">{game.playersOnline} jugando</Badge>
       ) : (

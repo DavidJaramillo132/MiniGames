@@ -39,19 +39,23 @@ function Login() {
   };
 
   return (
-    <main className="page-shell auth-layout">
-      <section className="auth-card">
-        <div className="logo-lockup">
-          <div className="logo-mark">
+    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(83,74,183,0.12),transparent_30%),#0f0f13] px-4 py-8 font-sans text-[#f5f7ff]">
+      <section className="w-full max-w-[400px] rounded-[12px] border border-[#2a2a3a] bg-gradient-to-b from-[rgba(32,32,45,0.96)] to-[rgba(24,24,35,0.96)] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.35)] max-sm:px-5 max-sm:py-7">
+        <div className="mb-7 inline-flex items-center gap-[14px]">
+          <div className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-gradient-to-br from-[rgba(83,74,183,0.95)] to-[rgba(120,111,230,0.95)] shadow-[0_12px_30px_rgba(83,74,183,0.35)]">
             <GamepadIcon />
           </div>
-          <span className="logo-text">PlayHub</span>
+          <span className="text-[2rem] font-bold tracking-[-0.03em]">PlayHub</span>
         </div>
 
-        <h1 className="page-title">Welcome back</h1>
-        <p className="page-subtitle">Jump back into your favorite multiplayer minigames.</p>
+        <h1 className="mb-2 text-[1.85rem] leading-[1.1] font-bold tracking-[-0.03em]">
+          Welcome back
+        </h1>
+        <p className="mb-7 text-[#f5f7ff]/68">
+          Jump back into your favorite multiplayer minigames.
+        </p>
 
-        <div className="field-stack">
+        <div className="grid gap-4">
           <Input
             label="Email"
             type="email"
@@ -71,12 +75,12 @@ function Login() {
           />
         </div>
 
-        <div className="auth-actions">
+        <div className="mt-6 grid gap-[18px]">
           <Button fullWidth isLoading={isLoading} onClick={handleSignIn}>
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
 
-          <div className="auth-links">
+          <div className="grid gap-3">
             <Button variant="ghost" onClick={() => navigate('/register')}>
               Don't have an account? Register
             </Button>

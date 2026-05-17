@@ -20,22 +20,22 @@ function TrophyIcon() {
 
 function Leaderboard({ gameName, entries }: LeaderboardProps) {
   return (
-    <section className="panel-card page-shell">
-      <div className="panel-header">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[12px] border border-[rgba(58,58,78,0.72)] bg-gradient-to-b from-[rgba(28,28,40,0.97)] to-[rgba(24,24,35,0.97)] p-[22px]">
+      <div className="mb-[18px] inline-flex items-center gap-2.5 text-[1.8rem] font-bold tracking-[-0.04em]">
         <TrophyIcon />
         <span>Leaders - {gameName}</span>
       </div>
-      <div className="leaderboard-list">
+      <div className="grid min-h-0 flex-1 gap-3.5 overflow-auto pr-1">
         {entries.map((entry) => (
-          <div key={entry.rank} className="leaderboard-row">
-            <span className="leaderboard-rank" style={{ color: entry.rankColor }}>
+          <div key={entry.rank} className="grid grid-cols-[28px_1fr_auto] items-center gap-4 py-2.5">
+            <span className="text-[1.6rem] font-bold" style={{ color: entry.rankColor }}>
               {entry.rank}
             </span>
             <div>
-              <div className="leaderboard-name">{entry.username}</div>
-              <div className="leaderboard-meta">ELO {entry.elo}</div>
+              <div className="text-[1.55rem] font-[650] leading-[1.05]">{entry.username}</div>
+              <div className="text-white/35">ELO {entry.elo}</div>
             </div>
-            <span className="leaderboard-wins">{entry.wins}W</span>
+            <span className="text-[1.45rem] font-bold text-[#5dcaa5]">{entry.wins}W</span>
           </div>
         ))}
       </div>

@@ -28,21 +28,24 @@ function Navbar({ onlineCount }: NavbarProps) {
   };
 
   return (
-    <header className="topbar">
-      <div className="topbar-brand">
-        <div className="logo-mark">
+    <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-[#2a2a3a] px-6 py-[18px] max-[900px]:grid-cols-1 max-[900px]:justify-items-start">
+      <div className="inline-flex justify-self-start items-center gap-3">
+        <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(83,74,183,0.95)] to-[rgba(120,111,230,0.95)] shadow-[0_12px_30px_rgba(83,74,183,0.35)]">
           <GamepadIcon />
         </div>
-        <span className="topbar-brand-text">PlayHub</span>
+        <span className="text-[1.95rem] font-bold tracking-[-0.04em]">PlayHub</span>
       </div>
 
-      <div className="presence-pill">
-        <span className="presence-dot" />
+      <div className="inline-flex items-center gap-2.5 text-[1.1rem] text-[#f5f7ff]/68">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#5dcaa5] shadow-[0_0_0_4px_rgba(93,202,165,0.14)]" />
         <span>{onlineCount} online</span>
       </div>
 
-      <div className="topbar-actions">
-        <div className="avatar" aria-label={user?.name ?? 'Player'}>
+      <div className="inline-flex justify-self-end items-center gap-3 max-[900px]:justify-self-start">
+        <div
+          className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(83,74,183,0.92)] to-[rgba(111,101,219,0.88)] font-bold tracking-[0.02em]"
+          aria-label={user?.name ?? 'Player'}
+        >
           {user?.initials ?? 'PH'}
         </div>
         <Button variant="ghost" onClick={handleLogout}>

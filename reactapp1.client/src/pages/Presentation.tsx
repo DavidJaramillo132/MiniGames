@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import LandingNav from '../components/layout/LandingNav';
+import Spinner from '../components/ui/Spinner';
 import { getGames } from '../services/gameService';
 import type { Game } from '../types/game.types';
 
@@ -11,18 +13,6 @@ const presentationStats = [
   { value: '142', label: 'En linea ahora' },
   { value: '3', label: 'Juegos disponibles' },
 ];
-
-function GamepadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#f8f8ff" strokeWidth="1.9">
-      <path d="M7 10h10a4 4 0 0 1 3.9 4.9l-.6 2.6a2.4 2.4 0 0 1-3.8 1.3L13.8 17h-3.6l-2.7 1.8a2.4 2.4 0 0 1-3.8-1.3L3.1 15A4 4 0 0 1 7 10Z" />
-      <path d="M8 13v4" />
-      <path d="M6 15h4" />
-      <path d="M16 14h.01" />
-      <path d="M18 16h.01" />
-    </svg>
-  );
-}
 
 function PlayIcon() {
   return (
@@ -72,44 +62,28 @@ function Presentation() {
   const previewGames = useMemo(() => games.slice(0, 3), [games]);
 
   return (
-    <main className="page-shell landing-page">
-      <div className="landing-shell">
-        <header className="landing-header">
-          <div className="topbar-brand">
-            <div className="logo-mark">
-              <GamepadIcon />
-            </div>
-            <span className="topbar-brand-text">PlayHub</span>
-          </div>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(83,74,183,0.13),transparent_30%),linear-gradient(180deg,rgba(17,17,24,0.95),rgba(15,15,19,1))] font-sans text-[#f5f7ff]">
+      <div className="grid min-h-screen grid-rows-[auto_1fr_auto] border border-[rgba(42,42,58,0.88)] bg-gradient-to-b from-[rgba(16,16,21,0.98)] to-[rgba(14,14,19,1)]">
+        <LandingNav />
 
-          <div className="landing-header-actions">
-            <Button variant="surface" onClick={() => navigate('/login')}>
-              Iniciar sesion
-            </Button>
-            <Button variant="surface" onClick={() => navigate('/register')}>
-              Registrarse
-            </Button>
-          </div>
-        </header>
-
-        <section className="landing-hero">
+        <section className="grid content-center justify-items-center gap-[30px] px-5 py-14 text-center max-sm:px-4 max-sm:py-10">
           <Badge variant="primary">Multijugador en tiempo real</Badge>
 
-          <div className="landing-copy">
-            <h1 className="landing-title">
+          <div className="grid max-w-[760px] gap-[18px]">
+            <h1 className="m-0 text-[clamp(3.4rem,6vw,5.6rem)] leading-[0.96] font-bold tracking-[-0.07em]">
               Juega, compite y
-              <span className="landing-title-accent"> sube en el ranking</span>
+              <span className="text-[#a8a0ff]"> sube en el ranking</span>
             </h1>
-            <p className="landing-subtitle">
+            <p className="mx-auto max-w-[660px] text-[clamp(1.15rem,2vw,1.55rem)] leading-[1.55] text-white/42">
               Una plataforma de minijuegos multijugador. Reta a jugadores de todo el mundo en
               tiempo real.
             </p>
           </div>
 
-          <div className="landing-actions">
+          <div className="flex flex-wrap justify-center gap-4">
             <Button variant="surface" onClick={() => navigate('/register')}>
               <PlayIcon />
-              <span>Jugar ahora</span>
+              Jugar ahora
             </Button>
             <Button
               variant="surface"
@@ -118,24 +92,29 @@ function Presentation() {
               }
             >
               <HowItWorksIcon />
-              <span>Ver como funciona</span>
+              Ver como funciona
             </Button>
           </div>
 
-          <div id="landing-games" className="landing-game-strip">
+          <div
+            id="landing-games"
+            className="mt-[18px] grid w-full max-w-[980px] gap-4 md:grid-cols-2 xl:grid-cols-3"
+          >
             {isLoading ? (
-              <div className="panel-card loading-card">
-                <span className="spinner" />
+              <div className="flex min-h-[160px] items-center justify-center gap-3 rounded-[12px] border border-[rgba(58,58,78,0.72)] bg-gradient-to-b from-[rgba(28,28,40,0.97)] to-[rgba(24,24,35,0.97)] text-[#f5f7ff]/68 md:col-span-2 xl:col-span-3">
+                <Spinner size={28} />
                 <span>Cargando minijuegos...</span>
               </div>
             ) : (
               previewGames.map((game) => (
                 <article
                   key={game.id}
-                  className="landing-game-card"
-                  style={{ ['--card-accent' as string]: game.accentColor }}
+                  className="flex min-h-[108px] items-center gap-4 rounded-2xl border border-[rgba(58,58,78,0.85)] bg-gradient-to-b from-[rgba(31,31,45,0.95)] to-[rgba(25,25,36,0.95)] px-5 py-[18px] text-left"
                 >
-                  <div className="landing-game-icon">
+                  <div
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                    style={{ color: game.accentColor, backgroundColor: `${game.accentColor}24` }}
+                  >
                     {game.id === 'tic-tac-toe' ? (
                       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9">
                         <path d="M8 7L16 17" />
@@ -163,15 +142,15 @@ function Presentation() {
                     )}
                   </div>
 
-                  <div className="landing-game-info">
-                    <h2>{game.name}</h2>
+                  <div className="grid gap-1.5">
+                    <h2 className="m-0 text-[1.18rem] leading-[1.1] font-semibold">{game.name}</h2>
                     {game.isAvailable ? (
-                      <p>
-                        <span className="landing-online-dot" />
+                      <p className="m-0 inline-flex items-center gap-2 text-[#f5f7ff]/46">
+                        <span className="h-2 w-2 rounded-full bg-[#5dcaa5]" />
                         {game.playersOnline} jugando
                       </p>
                     ) : (
-                      <p className="is-warning">{game.statusLabel}</p>
+                      <p className="m-0 text-[#f09c74]">{game.statusLabel}</p>
                     )}
                   </div>
                 </article>
@@ -180,11 +159,13 @@ function Presentation() {
           </div>
         </section>
 
-        <section className="landing-stats">
+        <section className="grid gap-5 border-t border-[rgba(42,42,58,0.88)] bg-[rgba(10,10,15,0.95)] px-[30px] py-[26px] md:grid-cols-2 xl:grid-cols-4 max-sm:px-4">
           {presentationStats.map((stat) => (
-            <article key={stat.label} className="landing-stat">
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
+            <article key={stat.label} className="grid gap-1.5 text-center">
+              <strong className="text-[clamp(2rem,3vw,3rem)] leading-none font-bold tracking-[-0.04em]">
+                {stat.value}
+              </strong>
+              <span className="text-[1.12rem] text-white/42">{stat.label}</span>
             </article>
           ))}
         </section>
