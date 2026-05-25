@@ -5,6 +5,7 @@ import Game from '../pages/Game';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Presentation from '../pages/Presentation';
+import TicTacToeGame from '../pages/TicTacToeGame';
 import Register from '../pages/Register';
 
 export default function AppRoutes() {
@@ -22,6 +23,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/home" element={<Home />} />
         <Route path="/game/:gameId" element={<Game />} />
+        <Route path="/game/tic-tac-toe/room/:roomId" element={<TicTacToeGame />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

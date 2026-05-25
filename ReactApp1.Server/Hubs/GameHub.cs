@@ -1,18 +1,31 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
+using ReactApp1.Server.Services;
 
 namespace ReactApp1.Server.Hubs
 {
     public class GameHub : Hub
     {
         private readonly ILogger<GameHub> _logger;
+        private readonly IRoomService _roomService;
+        private readonly IMatchService _matchService;
+        private readonly ILeaderboardService _leaderboardService;
 
+        // In-memory cache for fast game state during active play.
+        // The database is the source of truth for rooms, players, and match results.
         private static Dictionary<string, RoomState> salas = new();
         private static Dictionary<string, string> ConexionSala = new();
         private static Lock SalasLock = new();
 
-        public GameHub(ILogger<GameHub> logger)
+        public GameHub(
+            ILogger<GameHub> logger,
+            IRoomService roomService,
+            IMatchService matchService,
+            ILeaderboardService leaderboardService)
         {
             _logger = logger;
+            _roomService = roomService;
+            _matchService = matchService;
+            _leaderboardService = leaderboardService;
         }
 
         public async Task UnirseSala(string salaId)
@@ -73,7 +86,50 @@ namespace ReactApp1.Server.Hubs
                 jugadorUnoId = sala.Players[0]!;
             }
 
+            // Persist player join to database (fire-and-forget for speed)
+            try
+            {
+                var room = await _roomService.GetRoomByCodeAsync(salaId);
+
+                if (room is not null)
+                {
+                    // Extract userId from JWT claims if authenticated
+                    Guid? userId = null;
+                    var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                    if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedId))
+                    {
+                        userId = parsedId;
+                    }
+
+                    await _roomService.AddPlayerAsync(room.Id, userId, connectionId);
+
+                    if (iniciarJuego)
+                    {
+                        await _roomService.UpdateStatusAsync(room.Id, "in_game");
+
+                        // Start a match record in the database
+                        var match = await _matchService.StartMatchAsync(room.Id);
+
+                        lock (SalasLock)
+                        {
+                            if (salas.TryGetValue(salaId, out var s))
+                            {
+                                s.MatchId = match.Id;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist player join for room {RoomId}", salaId);
+            }
+
             await Groups.AddToGroupAsync(connectionId, salaId);
+
+            // Notify all clients that the rooms list has changed
+            await Clients.All.SendAsync("RoomsChanged");
             await EnviarEstadoSala(salaId);
 
             if (iniciarJuego)
@@ -97,6 +153,8 @@ namespace ReactApp1.Server.Hubs
             string simbolo = string.Empty;
             string? ganador;
             bool empate;
+            int turnNumber = 0;
+            Guid? matchId = null;
 
             lock (SalasLock)
             {
@@ -132,6 +190,9 @@ namespace ReactApp1.Server.Hubs
                 }
 
                 sala.Board[posicion] = simbolo;
+                sala.TurnCount++;
+                turnNumber = sala.TurnCount;
+                matchId = sala.MatchId;
                 movimientoAplicado = true;
 
                 ganador = ObtenerGanador(sala.Board);
@@ -153,6 +214,27 @@ namespace ReactApp1.Server.Hubs
                 return;
             }
 
+            // Persist move to database
+            if (matchId.HasValue)
+            {
+                try
+                {
+                    Guid? userId = null;
+                    var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                    if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedId))
+                    {
+                        userId = parsedId;
+                    }
+
+                    await _matchService.RecordMoveAsync(matchId.Value, userId, turnNumber, posicion, simbolo);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist move for match {MatchId}", matchId);
+                }
+            }
+
             await Clients.Group(salaId).SendAsync("JugadaRealizada", connectionId, posicion, simbolo);
             await EnviarEstadoSala(salaId);
 
@@ -166,6 +248,28 @@ namespace ReactApp1.Server.Hubs
                 ganador = sala.Winner;
             }
 
+            // Persist match result to database
+            if (matchId.HasValue)
+            {
+                try
+                {
+                    // Determine winner/loser user IDs from the room's connection-to-player mapping
+                    await _matchService.EndMatchAsync(matchId.Value, null, ganador is null ? "{\"draw\":true}" : $"{{\"winner\":\"{ganador}\"}}");
+
+                    // Update the room status
+                    var room = await _roomService.GetRoomByCodeAsync(salaId);
+
+                    if (room is not null)
+                    {
+                        await _roomService.UpdateStatusAsync(room.Id, "finished");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist match result for match {MatchId}", matchId);
+                }
+            }
+
             await Clients.Group(salaId).SendAsync("JuegoFinalizado", ganador);
         }
 
@@ -173,6 +277,7 @@ namespace ReactApp1.Server.Hubs
         {
             salaId = salaId.Trim();
             var connectionId = Context.ConnectionId;
+            Guid? newMatchId = null;
 
             lock (SalasLock)
             {
@@ -193,6 +298,34 @@ namespace ReactApp1.Server.Hubs
 
                 sala.ResetBoard();
                 sala.IsStarted = true;
+            }
+
+            // Start a new match record in the database
+            try
+            {
+                var room = await _roomService.GetRoomByCodeAsync(salaId);
+
+                if (room is not null)
+                {
+                    await _roomService.UpdateStatusAsync(room.Id, "in_game");
+                    var match = await _matchService.StartMatchAsync(room.Id);
+                    newMatchId = match.Id;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to start new match for room {RoomId}", salaId);
+            }
+
+            if (newMatchId.HasValue)
+            {
+                lock (SalasLock)
+                {
+                    if (salas.TryGetValue(salaId, out var sala))
+                    {
+                        sala.MatchId = newMatchId.Value;
+                    }
+                }
             }
 
             await Clients.Group(salaId).SendAsync("PartidaReiniciada");
@@ -234,8 +367,29 @@ namespace ReactApp1.Server.Hubs
                 }
             }
 
+            // Persist player leave to database
             if (!string.IsNullOrEmpty(salaId))
             {
+                try
+                {
+                    await _roomService.RemovePlayerByConnectionAsync(Context.ConnectionId);
+
+                    var room = await _roomService.GetRoomByCodeAsync(salaId);
+
+                    if (room is not null && room.CurrentPlayers <= 0)
+                    {
+                        await _roomService.DeleteRoomIfEmptyAsync(room.Id);
+                        await Clients.All.SendAsync("RoomDeleted", salaId);
+                    }
+
+                    // Notify all clients that rooms list changed
+                    await Clients.All.SendAsync("RoomsChanged");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist player leave for room {RoomId}", salaId);
+                }
+
                 await Clients.Group(salaId).SendAsync("JugadorDesconectado");
                 await EnviarEstadoSala(salaId);
             }
@@ -302,6 +456,8 @@ namespace ReactApp1.Server.Hubs
             public bool IsStarted { get; set; }
             public bool IsFinished { get; set; }
             public string? Winner { get; set; }
+            public Guid? MatchId { get; set; }
+            public int TurnCount { get; set; }
             public int PlayersConnected => Players.Count(x => !string.IsNullOrEmpty(x));
 
             public void ResetBoard()
@@ -310,6 +466,8 @@ namespace ReactApp1.Server.Hubs
                 CurrentTurn = "X";
                 IsFinished = false;
                 Winner = null;
+                MatchId = null;
+                TurnCount = 0;
             }
         }
 

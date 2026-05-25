@@ -1,45 +1,58 @@
-import { mockRequest } from './api';
+import { apiFetch } from './api';
 import type {
   AuthSession,
   LoginCredentials,
   RegistrationFields,
-  UserProfile,
 } from '../types/auth.types';
 
-function toInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((chunk) => chunk[0]?.toUpperCase())
-    .join('')
-    .slice(0, 2);
+interface ApiAuthResponse {
+  token: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    initials: string;
+  };
 }
 
-function buildUserProfile(name: string, email: string): UserProfile {
+function mapApiResponse(response: ApiAuthResponse): AuthSession {
   return {
-    id: name.toLowerCase().replace(/\s+/g, '-'),
-    name,
-    email,
-    initials: toInitials(name || email),
+    token: response.token,
+    user: {
+      id: response.user.id,
+      name: response.user.name,
+      email: response.user.email,
+      initials: response.user.initials,
+    },
   };
 }
 
 export async function login(credentials: LoginCredentials): Promise<AuthSession> {
-  const displayName = credentials.email.split('@')[0] || 'Player';
-
-  return mockRequest({
-    token: `playhub-token-${Date.now()}`,
-    user: buildUserProfile(displayName, credentials.email),
+  const response = await apiFetch<ApiAuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: credentials.email,
+      password: credentials.password,
+    }),
   });
+
+  return mapApiResponse(response);
 }
 
 export async function register(fields: RegistrationFields): Promise<AuthSession> {
-  return mockRequest({
-    token: `playhub-token-${Date.now()}`,
-    user: buildUserProfile(fields.username, fields.email),
+  const response = await apiFetch<ApiAuthResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      username: fields.username,
+      email: fields.email,
+      password: fields.password,
+    }),
   });
+
+  return mapApiResponse(response);
 }
 
 export async function logout(): Promise<void> {
-  await mockRequest(undefined);
+  // JWT is stateless — just clear the local session.
+  // If we add refresh tokens later, we'd call a server endpoint here.
 }

@@ -6,7 +6,7 @@ type SignalRStatus = 'idle' | 'connecting' | 'connected';
 export function useSignalR(enabled = false, roomId?: string) {
   const connectionRef = useRef<ReturnType<HubConnectionBuilder['build']> | null>(null);
   const hubUrl = useMemo(
-    () => `${import.meta.env.VITE_SIGNALR_HUB ?? '/gamehub'}${roomId ? `?room=${roomId}` : ''}`,
+    () => `${import.meta.env.VITE_SIGNALR_HUB ?? '/gameHub'}${roomId ? `?room=${roomId}` : ''}`,
     [roomId],
   );
   const [status, setStatus] = useState<SignalRStatus>(enabled ? 'connecting' : 'idle');

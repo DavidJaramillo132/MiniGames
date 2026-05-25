@@ -1,7 +1,6 @@
-import { mockRequest } from './api';
-import { mockGameDetailsMap } from './gameService';
+import { apiFetch } from './api';
 import type { LeaderboardEntry } from '../types/player.types';
 
 export async function getLeaderboard(gameId: string): Promise<LeaderboardEntry[]> {
-  return mockRequest(mockGameDetailsMap[gameId]?.leaderboard ?? []);
+  return apiFetch<LeaderboardEntry[]>(`/leaderboard/${encodeURIComponent(gameId)}`);
 }

@@ -18,6 +18,12 @@ export default defineConfig({
                 secure: false,
                 changeOrigin: true,
                 ws: true, // importante para WebSockets
+            },
+            '/gamehub': {
+                target: 'https://localhost:7037',
+                secure: false,
+                changeOrigin: true,
+                ws: true,
             }
         }
     },

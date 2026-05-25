@@ -1,6 +1,17 @@
+using System.Text;
+using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using ReactApp1.Server.Data;
+using ReactApp1.Server.Services;
+
+// ── Bootstrap ────────────────────────────────────────────────────────────────
+
+Env.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+
 var builder = WebApplication.CreateBuilder(args);
 
-// cors para el frontend
+// ── CORS ─────────────────────────────────────────────────────────────────────
 
 builder.Services.AddCors(options =>
 {
@@ -13,26 +24,96 @@ builder.Services.AddCors(options =>
     });
 });
 
-
-// Add services to the container.
+// ── Framework services ───────────────────────────────────────────────────────
 
 builder.Services.AddControllers();
-
-
-// mis servicios
 builder.Services.AddSignalR();
-
-
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+// ── JWT Authentication ───────────────────────────────────────────────────────
+
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Missing Jwt:Key in configuration.");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+    };
+
+    // Allow SignalR to receive the JWT via query string
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                context.HttpContext.Request.Path.StartsWithSegments("/gameHub"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// ── Database ─────────────────────────────────────────────────────────────────
+
+builder.Services.AddSingleton<DbConnectionFactory>();
+builder.Services.AddTransient<DatabaseSeeder>();
+
+// ── Application services ─────────────────────────────────────────────────────
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IGameCatalogService, GameCatalogService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+
+// ── Build ────────────────────────────────────────────────────────────────────
+
 var app = builder.Build();
+
+// ── Seed database ────────────────────────────────────────────────────────────
+
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+
+    try
+    {
+        await seeder.SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex,
+            "Database seeding failed. Make sure PostgreSQL is running and the schema has been applied. " +
+            "The server will continue without seeding.");
+    }
+}
+
+// ── Middleware pipeline ──────────────────────────────────────────────────────
 
 app.UseDefaultFiles();
 app.MapStaticAssets();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -41,13 +122,14 @@ if (app.Environment.IsDevelopment())
 app.UseCors("ClientPolicy");
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
 
-//mis servicios
+// SignalR hub
 app.MapHub<ReactApp1.Server.Hubs.GameHub>("/gameHub");
 
 app.Run();

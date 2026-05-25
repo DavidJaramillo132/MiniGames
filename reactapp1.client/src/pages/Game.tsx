@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -12,28 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../hooks/useGame';
 import { useSignalR } from '../hooks/useSignalR';
 import { formatDate } from '../utils/formatDate';
-
-interface RoomSummary {
-  id: string;
-  name: string;
-  creator: string;
-  players: number;
-  capacity: number;
-}
-
-const mockRoomsByGameId: Record<string, RoomSummary[]> = {
-  'tic-tac-toe': [
-    { id: 'ttt-1', name: 'Quick Match Arena', creator: 'nova_x', players: 2, capacity: 2 },
-    { id: 'ttt-2', name: 'Ranked Ladder', creator: 'lunaq', players: 1, capacity: 2 },
-    { id: 'ttt-3', name: 'Friends Room', creator: 'bytefox', players: 1, capacity: 2 },
-  ],
-  'batalla-naval': [
-    { id: 'bn-1', name: 'Fleet Hunters', creator: 'marina_k', players: 2, capacity: 2 },
-    { id: 'bn-2', name: 'Open Waters', creator: 'luc4s', players: 1, capacity: 2 },
-    { id: 'bn-3', name: 'Night Squadron', creator: 'carlos_gz', players: 1, capacity: 2 },
-    { id: 'bn-4', name: 'Casual Dock', creator: 'djdav', players: 1, capacity: 2 },
-  ],
-};
+import { getRoomsForGame, createRoom, type RoomSummary } from '../services/gameService';
 
 function slugifyRoomId(value: string) {
   return value
@@ -52,12 +31,13 @@ function Game() {
   const { user } = useAuth();
   const { totalPlayersOnline, details, selectedGame, isDetailsLoading, selectGame } = useGame();
   const [availableRooms, setAvailableRooms] = useState<RoomSummary[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomId, setNewRoomId] = useState('');
   const activeRoomId = searchParams.get('room');
-  const { status, hubUrl } = useSignalR(Boolean(activeRoomId), activeRoomId ?? undefined);
+  const { status, hubUrl, connection } = useSignalR(Boolean(activeRoomId), activeRoomId ?? undefined);
+  const selectedRoomId = activeRoomId;
 
   useEffect(() => {
     if (gameId) {
@@ -65,37 +45,62 @@ function Game() {
     }
   }, [gameId, selectGame]);
 
-  useEffect(() => {
-    if (!gameId) {
-      setAvailableRooms([]);
-      return;
+  // Load rooms from the API
+  const loadRooms = useCallback(async () => {
+    if (!gameId) return;
+
+    setIsLoadingRooms(true);
+
+    try {
+      const rooms = await getRoomsForGame(gameId);
+      setAvailableRooms(rooms);
+    } catch (error) {
+      console.error('Failed to load rooms:', error);
+    } finally {
+      setIsLoadingRooms(false);
     }
+  }, [gameId]);
 
-    const rooms = [...(mockRoomsByGameId[gameId] ?? [])];
-    setAvailableRooms(rooms);
+  useEffect(() => {
+    void loadRooms();
+  }, [loadRooms]);
 
-    const roomFromQuery = searchParams.get('room');
-    setSelectedRoomId(roomFromQuery);
-  }, [gameId, searchParams]);
+  // Listen for SignalR room changes to refresh the list in real-time
+  useEffect(() => {
+    if (!connection) return;
+
+    const handleRoomsChanged = () => {
+      void loadRooms();
+    };
+
+    connection.on('RoomsChanged', handleRoomsChanged);
+    connection.on('RoomDeleted', handleRoomsChanged);
+
+    return () => {
+      connection.off('RoomsChanged', handleRoomsChanged);
+      connection.off('RoomDeleted', handleRoomsChanged);
+    };
+  }, [connection, loadRooms]);
 
   const activeRoom = useMemo(
     () => availableRooms.find((room) => room.id === activeRoomId) ?? null,
     [activeRoomId, availableRooms],
   );
 
-  useEffect(() => {
-    if (!isCreateRoomOpen) {
-      setNewRoomName('');
-      setNewRoomId('');
-    }
-  }, [isCreateRoomOpen]);
-
   const handleOpenCreateRoom = () => {
+    setNewRoomName('');
+    setNewRoomId('');
     setIsCreateRoomOpen((current) => !current);
   };
 
-  const handleConfirmCreateRoom = () => {
-    if (!details || !selectedGame) {
+  const handleCloseCreateRoom = () => {
+    setIsCreateRoomOpen(false);
+    setNewRoomName('');
+    setNewRoomId('');
+  };
+
+  const handleConfirmCreateRoom = async () => {
+    if (!details || !selectedGame || !gameId) {
       return;
     }
 
@@ -106,25 +111,31 @@ function Game() {
       return;
     }
 
-    const nextRoom: RoomSummary = {
-      id: generatedRoomId,
-      name: trimmedName,
-      creator: user?.name ?? 'Host player',
-      players: 1,
-      capacity: 2,
-    };
+    try {
+      const room = await createRoom(gameId, trimmedName, generatedRoomId);
 
-    setAvailableRooms((current) => {
-      const withoutDuplicate = current.filter((room) => room.id !== nextRoom.id);
-      return [nextRoom, ...withoutDuplicate];
-    });
-    setSelectedRoomId(nextRoom.id);
-    setSearchParams({ room: nextRoom.id });
-    setIsCreateRoomOpen(false);
+      handleCloseCreateRoom();
+
+      // Refresh rooms list
+      await loadRooms();
+
+      if (gameId === 'tic-tac-toe') {
+        navigate(`/game/tic-tac-toe/room/${room.roomCode}`);
+        return;
+      }
+
+      setSearchParams({ room: room.id });
+    } catch (error) {
+      console.error('Failed to create room:', error);
+    }
   };
 
   const handleJoinRoom = (room: RoomSummary) => {
-    setSelectedRoomId(room.id);
+    if (gameId === 'tic-tac-toe') {
+      navigate(`/game/tic-tac-toe/room/${room.id}`);
+      return;
+    }
+
     setSearchParams({ room: room.id });
   };
 
@@ -216,7 +227,7 @@ function Game() {
               <RoomList
                 rooms={availableRooms}
                 selectedRoomId={selectedRoomId}
-                onSelectRoom={setSelectedRoomId}
+                onSelectRoom={(roomId) => setSearchParams({ room: roomId })}
                 onJoinRoom={handleJoinRoom}
                 onCreateRoom={handleOpenCreateRoom}
               />
@@ -243,7 +254,7 @@ function Game() {
           }
         }}
         onRoomIdChange={setNewRoomId}
-        onClose={() => setIsCreateRoomOpen(false)}
+        onClose={handleCloseCreateRoom}
         onConfirm={handleConfirmCreateRoom}
       />
     </main>
