@@ -17,20 +17,29 @@ function BarsIcon() {
 
 function StatsPanel({ stats }: StatsPanelProps) {
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[12px] border border-[rgba(58,58,78,0.72)] bg-gradient-to-b from-[rgba(28,28,40,0.97)] to-[rgba(24,24,35,0.97)] p-[22px]">
-      <div className="mb-[18px] inline-flex items-center gap-2.5 text-[1.8rem] font-bold tracking-[-0.04em]">
-        <BarsIcon />
-        <span>My stats - {stats.gameName}</span>
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2.5 text-[1.8rem] font-bold tracking-[-0.04em]">
+          <BarsIcon />
+          <span>My stats - {stats.gameName}</span>
+        </div>
+        <span className="rounded-full border border-[rgba(120,230,255,0.22)] bg-[rgba(120,230,255,0.08)] px-3 py-1 text-[0.78rem] uppercase tracking-[0.2em] text-[#9cecff]">
+          Personal
+        </span>
       </div>
       <div className="grid flex-1 content-start gap-3.5 sm:grid-cols-2">
         {stats.tiles.map((tile) => (
           <article
             key={tile.label}
-            className="rounded-[8px] border border-[rgba(42,42,58,0.8)] bg-[rgba(17,17,25,0.82)] p-4"
+            className="rounded-[22px] border border-[rgba(141,232,255,0.1)] bg-[rgba(255,255,255,0.02)] p-5"
           >
-            <p className="mb-2.5 text-white/30">{tile.label}</p>
-            <p className="m-0 text-[2.3rem] leading-none font-bold">{tile.value}</p>
-            <p className="mt-2 text-[1.05rem] font-semibold text-[#5dcaa5]">{tile.note}</p>
+            <p className="mb-3 text-[0.82rem] uppercase tracking-[0.18em] text-[#d9ebff]/34">
+              {tile.label}
+            </p>
+            <p className="m-0 text-[2.4rem] leading-none font-bold tracking-[-0.05em]">
+              {tile.value}
+            </p>
+            <p className="mt-3 text-[0.98rem] font-semibold text-[#86f0be]">{tile.note}</p>
           </article>
         ))}
       </div>

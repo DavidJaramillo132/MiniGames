@@ -7,6 +7,25 @@ import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
 import { useGame } from '../hooks/useGame';
 
+function ArenaIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9">
+      <path d="M4 7h16" />
+      <path d="M7 4v16" />
+      <path d="M17 4v16" />
+      <path d="M4 17h16" />
+    </svg>
+  );
+}
+
+function BoltIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9">
+      <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
+    </svg>
+  );
+}
+
 function Home() {
   const navigate = useNavigate();
   const {
@@ -21,6 +40,8 @@ function Home() {
     findMatch,
   } = useGame();
 
+  const selectedGame = games.find((game) => game.id === selectedGameId) ?? games[0] ?? null;
+
   const handleFindMatch = async () => {
     const match = await findMatch();
 
@@ -28,19 +49,18 @@ function Home() {
       navigate(`/game/${match.gameId}`);
     }
   };
-  const appShellClass =
-    'min-h-screen w-full overflow-x-hidden border-y border-[#2a2a3a] bg-gradient-to-b from-[rgba(20,20,28,0.98)] to-[rgba(15,15,19,0.98)]';
+
   const loadingPanelClass =
-    'flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[12px] border border-[rgba(58,58,78,0.72)] bg-gradient-to-b from-[rgba(28,28,40,0.97)] to-[rgba(24,24,35,0.97)] text-[#f5f7ff]/68';
+    'flex min-h-[320px] flex-col items-center justify-center gap-3 rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] text-[#d6e8f8]/68 shadow-[0_24px_60px_rgba(0,0,0,0.2)]';
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(83,74,183,0.12),transparent_30%),#0f0f13] font-sans text-[#f5f7ff]">
-      <div className={appShellClass}>
+    <main className="min-h-screen bg-transparent text-[#edf6ff]">
+      <div className="relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,230,255,0.12),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.08),transparent_20%)]" />
+
         <Navbar onlineCount={totalPlayersOnline} />
 
-        <section className="px-6 pb-8 pt-7 max-sm:px-4">
-          <h1 className="mb-5 text-base uppercase tracking-[0.14em] text-white/52">Minigames</h1>
-
+        <section className="relative mx-auto max-w-[1360px] px-6 pb-10 pt-2 max-sm:px-4">
           {isLobbyLoading ? (
             <div className={loadingPanelClass}>
               <Spinner size={28} />
@@ -48,7 +68,108 @@ function Home() {
             </div>
           ) : (
             <>
-              <div className="grid gap-[18px] xl:grid-cols-3">
+              <section className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+                <article className="overflow-hidden rounded-[34px] border border-[rgba(141,232,255,0.16)] bg-[linear-gradient(135deg,rgba(8,18,34,0.96),rgba(6,14,28,0.96))] p-7 shadow-[0_28px_90px_rgba(0,0,0,0.22)]">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="grid gap-3">
+                      <span className="text-[0.82rem] uppercase tracking-[0.26em] text-[#97dafc]/68">
+                        Lobby central
+                      </span>
+                      <h1 className="font-['Rajdhani'] text-[clamp(3.2rem,6vw,5.2rem)] font-bold uppercase leading-[0.9] tracking-[0.05em]">
+                        Choose the next
+                        <span className="block text-[#78e6ff]">fight.</span>
+                      </h1>
+                      <p className="max-w-[700px] text-[1.02rem] leading-7 text-[#d6e8f8]/68">
+                        Selecciona un juego, revisa tu posicion y entra directo a una partida.
+                        El lobby ahora funciona como una arena principal: claro, rapido y enfocado
+                        en competir.
+                      </p>
+                    </div>
+
+                    <div className="rounded-[24px] border border-[rgba(134,240,190,0.18)] bg-[rgba(134,240,190,0.08)] px-4 py-3 text-right">
+                      <div className="text-[0.78rem] uppercase tracking-[0.22em] text-[#c6ffee]/64">
+                        Active pulse
+                      </div>
+                      <div className="mt-2 text-[1.8rem] font-bold text-[#f6fffb]">
+                        {totalPlayersOnline}
+                      </div>
+                      <div className="text-sm text-[#c6ffee]/68">players online</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-7 grid gap-4 md:grid-cols-[1fr_auto]">
+                    <div className="rounded-[28px] border border-[rgba(120,230,255,0.14)] bg-[rgba(255,255,255,0.03)] p-5">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border"
+                          style={{
+                            color: selectedGame?.accentColor ?? '#78e6ff',
+                            borderColor: `${selectedGame?.accentColor ?? '#78e6ff'}55`,
+                            backgroundColor: `${selectedGame?.accentColor ?? '#78e6ff'}20`,
+                          }}
+                        >
+                          <ArenaIcon />
+                        </div>
+                        <div>
+                          <p className="text-[0.78rem] uppercase tracking-[0.2em] text-[#d6e8f8]/44">
+                            Selected game
+                          </p>
+                          <h2 className="mt-1 text-[1.7rem] font-bold tracking-[-0.04em]">
+                            {selectedGame?.name ?? 'No game selected'}
+                          </h2>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-sm leading-7 text-[#d6e8f8]/62">
+                        {selectedGame?.description ??
+                          'Elige un minijuego para ver stats, salas y matchmaking.'}
+                      </p>
+                    </div>
+
+                    <Button className="min-h-[100%] min-w-[220px]" isLoading={isFindingMatch} onClick={handleFindMatch}>
+                      <BoltIcon />
+                      {isFindingMatch ? 'Finding match...' : 'Quick match'}
+                    </Button>
+                  </div>
+                </article>
+
+                <aside className="grid gap-4">
+                  <article className="rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
+                    <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">
+                      Session focus
+                    </p>
+                    <h2 className="mt-2 text-[1.7rem] font-bold tracking-[-0.04em]">
+                      {selectedGame?.name ?? 'Ready to play'}
+                    </h2>
+                    <p className="mt-3 text-sm leading-7 text-[#d6e8f8]/62">
+                      {selectedGame?.isAvailable
+                        ? `${selectedGame.playersOnline ?? 0} jugadores estan activos en esta arena.`
+                        : selectedGame?.statusLabel ?? 'Selecciona una arena para continuar.'}
+                    </p>
+                  </article>
+
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                    <article className="rounded-[26px] border border-[rgba(255,199,106,0.16)] bg-[rgba(255,199,106,0.07)] p-5">
+                      <p className="text-[0.78rem] uppercase tracking-[0.2em] text-[#ffd9a0]/60">
+                        Ranked energy
+                      </p>
+                      <p className="mt-2 text-[1.5rem] font-semibold leading-tight text-[#fff7eb]">
+                        Revisa leaderboard y empuja tu proxima racha.
+                      </p>
+                    </article>
+
+                    <article className="rounded-[26px] border border-[rgba(134,240,190,0.16)] bg-[rgba(134,240,190,0.07)] p-5">
+                      <p className="text-[0.78rem] uppercase tracking-[0.2em] text-[#c6ffee]/60">
+                        Fast loop
+                      </p>
+                      <p className="mt-2 text-[1.5rem] font-semibold leading-tight text-[#effff8]">
+                        Selecciona, entra y juega sin friccion.
+                      </p>
+                    </article>
+                  </div>
+                </aside>
+              </section>
+
+              <section className="mt-6 grid gap-5 xl:grid-cols-3">
                 {games.map((game) => (
                   <GameCard
                     key={game.id}
@@ -57,15 +178,9 @@ function Home() {
                     onSelect={selectGame}
                   />
                 ))}
-              </div>
+              </section>
 
-              <div className="mt-5">
-                <Button fullWidth isLoading={isFindingMatch} onClick={handleFindMatch}>
-                  {isFindingMatch ? 'Finding match...' : 'Find match'}
-                </Button>
-              </div>
-
-              <div className="mt-9 grid gap-[18px] xl:grid-cols-2">
+              <section className="mt-6 grid gap-5 xl:grid-cols-2">
                 {isDetailsLoading || !details ? (
                   <>
                     <div className={loadingPanelClass}>
@@ -83,7 +198,7 @@ function Home() {
                     <StatsPanel stats={details.stats} />
                   </>
                 )}
-              </div>
+              </section>
             </>
           )}
         </section>

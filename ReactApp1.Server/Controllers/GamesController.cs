@@ -19,9 +19,8 @@ public class GamesController : ControllerBase
     private static readonly Dictionary<string, string> AccentColors = new()
     {
         ["tic-tac-toe"] = "#534AB7",
-        // Future games:
-        // ["memory"] = "#E0A526",
-        // ["trivia"] = "#b7734a",
+        ["memory"] = "#E0A526",
+        ["trivia"] = "#4CC9F0",
     };
 
     [HttpGet]
@@ -64,8 +63,8 @@ public class GamesController : ControllerBase
     private static string GetDescription(string slug) => slug switch
     {
         "tic-tac-toe" => "Tres en raya clásico",
-        // "memory" => "Encuentra las parejas ocultas",
-        // "trivia" => "Demuestra tu conocimiento",
+        "memory" => "Encuentra las parejas ocultas",
+        "trivia" => "Demuestra tu conocimiento en tiempo real",
         _ => "Juego multijugador en tiempo real"
     };
 }

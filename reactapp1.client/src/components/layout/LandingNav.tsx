@@ -17,12 +17,19 @@ function LandingNav() {
   const navigate = useNavigate();
 
   return (
-    <header className="flex items-center justify-between gap-5 border-b border-[rgba(42,42,58,0.88)] px-7 py-[18px] max-[900px]:flex-col max-[900px]:items-stretch max-sm:px-4">
+    <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-5 px-6 py-6 max-[900px]:flex-col max-[900px]:items-stretch max-sm:px-4">
       <div className="inline-flex items-center gap-3">
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(83,74,183,0.95)] to-[rgba(120,111,230,0.95)] shadow-[0_12px_30px_rgba(83,74,183,0.35)]">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(120,230,255,0.28)] bg-[linear-gradient(135deg,rgba(120,230,255,0.22),rgba(77,163,255,0.18))] shadow-[0_14px_40px_rgba(69,154,255,0.2)]">
           <GamepadIcon />
         </div>
-        <span className="text-[1.95rem] font-bold tracking-[-0.04em]">PlayHub</span>
+        <div className="grid gap-0.5">
+          <span className="font-['Rajdhani'] text-[2.2rem] font-bold leading-none tracking-[0.08em] text-[#f6fbff] uppercase">
+            PlayHub
+          </span>
+          <span className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">
+            Multiplayer Arena
+          </span>
+        </div>
       </div>
 
       <div className="inline-flex items-center gap-3 max-[900px]:w-full">

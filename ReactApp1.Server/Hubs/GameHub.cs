@@ -44,6 +44,13 @@ namespace ReactApp1.Server.Hubs
             var connectionId = Context.ConnectionId;
             bool iniciarJuego = false;
             string jugadorUnoId;
+            int indiceJugador;
+            string nombreJugador;
+
+            nombreJugador =
+                Context.User?.FindFirst("username")?.Value
+                ?? Context.User?.Identity?.Name
+                ?? "Jugador";
 
             lock (SalasLock)
             {
@@ -63,15 +70,24 @@ namespace ReactApp1.Server.Hubs
                     if (sala.Players[0] is null)
                     {
                         sala.Players[0] = connectionId;
+                        sala.PlayerNames[0] = nombreJugador;
                     }
                     else if (sala.Players[1] is null)
                     {
                         sala.Players[1] = connectionId;
+                        sala.PlayerNames[1] = nombreJugador;
                     }
                     else
                     {
                         throw new HubException("La sala está llena.");
                     }
+                }
+
+                indiceJugador = Array.IndexOf(sala.Players, connectionId);
+
+                if (indiceJugador >= 0)
+                {
+                    sala.PlayerNames[indiceJugador] = nombreJugador;
                 }
 
                 ConexionSala[connectionId] = salaId;
@@ -127,6 +143,9 @@ namespace ReactApp1.Server.Hubs
             }
 
             await Groups.AddToGroupAsync(connectionId, salaId);
+            await Clients.Caller.SendAsync(
+                "AsignacionJugador",
+                new PlayerAssignmentDto(indiceJugador == 0 ? "X" : "O", nombreJugador));
 
             // Notify all clients that the rooms list has changed
             await Clients.All.SendAsync("RoomsChanged");
@@ -349,6 +368,7 @@ namespace ReactApp1.Server.Hubs
                         if (index >= 0)
                         {
                             sala.Players[index] = null;
+                            sala.PlayerNames[index] = null;
                         }
 
                         if (sala.PlayersConnected == 0)
@@ -417,6 +437,9 @@ namespace ReactApp1.Server.Hubs
                     salaId,
                     [.. sala.Board],
                     sala.CurrentTurn,
+                    sala.CurrentTurn == "X" ? sala.PlayerNames[0] : sala.PlayerNames[1],
+                    sala.PlayerNames[0],
+                    sala.PlayerNames[1],
                     sala.IsStarted,
                     sala.IsFinished,
                     sala.Winner,
@@ -451,6 +474,7 @@ namespace ReactApp1.Server.Hubs
         private sealed class RoomState
         {
             public string?[] Players { get; } = new string?[2];
+            public string?[] PlayerNames { get; } = new string?[2];
             public string[] Board { get; } = new string[9];
             public string CurrentTurn { get; set; } = "X";
             public bool IsStarted { get; set; }
@@ -475,9 +499,16 @@ namespace ReactApp1.Server.Hubs
             string SalaId,
             string[] Board,
             string CurrentTurn,
+            string? CurrentTurnPlayerName,
+            string? PlayerXName,
+            string? PlayerOName,
             bool IsStarted,
             bool IsFinished,
             string? Winner,
             int JugadoresConectados);
+
+        private sealed record PlayerAssignmentDto(
+            string Symbol,
+            string PlayerName);
     }
 }

@@ -28,22 +28,29 @@ function Navbar({ onlineCount }: NavbarProps) {
   };
 
   return (
-    <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-[#2a2a3a] px-6 py-[18px] max-[900px]:grid-cols-1 max-[900px]:justify-items-start">
+    <header className="mx-auto grid w-full max-w-[1360px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-6 max-[900px]:grid-cols-1 max-[900px]:justify-items-start max-sm:px-4">
       <div className="inline-flex justify-self-start items-center gap-3">
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[rgba(83,74,183,0.95)] to-[rgba(120,111,230,0.95)] shadow-[0_12px_30px_rgba(83,74,183,0.35)]">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[rgba(120,230,255,0.28)] bg-[linear-gradient(135deg,rgba(120,230,255,0.22),rgba(77,163,255,0.18))] shadow-[0_14px_40px_rgba(69,154,255,0.2)]">
           <GamepadIcon />
         </div>
-        <span className="text-[1.95rem] font-bold tracking-[-0.04em]">PlayHub</span>
+        <div className="grid gap-0.5">
+          <span className="font-['Rajdhani'] text-[2.2rem] font-bold leading-none tracking-[0.08em] text-[#f6fbff] uppercase">
+            PlayHub
+          </span>
+          <span className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">
+            Competitive Lobby
+          </span>
+        </div>
       </div>
 
-      <div className="inline-flex items-center gap-2.5 text-[1.1rem] text-[#f5f7ff]/68">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#5dcaa5] shadow-[0_0_0_4px_rgba(93,202,165,0.14)]" />
-        <span>{onlineCount} online</span>
+      <div className="inline-flex items-center gap-2.5 rounded-full border border-[rgba(134,240,190,0.24)] bg-[rgba(134,240,190,0.08)] px-4 py-2 text-[1rem] text-[#d9fef1]">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#86f0be] shadow-[0_0_0_4px_rgba(134,240,190,0.12)]" />
+        <span>{onlineCount} players online</span>
       </div>
 
       <div className="inline-flex justify-self-end items-center gap-3 max-[900px]:justify-self-start">
         <div
-          className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[rgba(83,74,183,0.92)] to-[rgba(111,101,219,0.88)] font-bold tracking-[0.02em]"
+          className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(120,230,255,0.24)] bg-[linear-gradient(135deg,rgba(120,230,255,0.18),rgba(255,123,99,0.18))] font-bold tracking-[0.06em] text-[#f8fdff]"
           aria-label={user?.name ?? 'Player'}
         >
           {user?.initials ?? 'PH'}

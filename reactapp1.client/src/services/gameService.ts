@@ -1,6 +1,5 @@
 import { apiFetch } from './api';
 import type { Game, GameDetails, MatchSession } from '../types/game.types';
-import type { LeaderboardEntry } from '../types/player.types';
 
 // ── Room summary type (used by Game.tsx) ─────────────────────────────────────
 
@@ -55,20 +54,19 @@ export async function getGames(): Promise<Game[]> {
 }
 
 export async function getGameDetails(gameId: string): Promise<GameDetails> {
-  // Build game details from the games + leaderboard endpoints
-  const [games, leaderboard] = await Promise.all([
+  const [games, gameById] = await Promise.all([
     apiFetch<GameApiResponse[]>('/games'),
-    apiFetch<LeaderboardEntry[]>(`/leaderboard/${gameId}`),
+    apiFetch<GameApiResponse>(`/games/${encodeURIComponent(gameId)}`).catch(() => null),
   ]);
 
-  const game = games.find((g) => g.id === gameId) ?? games[0];
+  const game = gameById ?? games.find((g) => g.id === gameId) ?? games[0];
 
   return {
     gameId: game.id,
     gameName: game.name,
     roomStatus: 'Queue open',
     updatedAt: new Date().toISOString(),
-    leaderboard,
+    leaderboard: [],
     stats: {
       gameName: game.name,
       tiles: [

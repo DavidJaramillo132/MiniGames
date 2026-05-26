@@ -13,6 +13,7 @@ import { useGame } from '../hooks/useGame';
 import { useSignalR } from '../hooks/useSignalR';
 import { formatDate } from '../utils/formatDate';
 import { getRoomsForGame, createRoom, type RoomSummary } from '../services/gameService';
+import type { RoomListItem } from '../components/game/RoomList';
 
 function slugifyRoomId(value: string) {
   return value
@@ -31,12 +32,11 @@ function Game() {
   const { user } = useAuth();
   const { totalPlayersOnline, details, selectedGame, isDetailsLoading, selectGame } = useGame();
   const [availableRooms, setAvailableRooms] = useState<RoomSummary[]>([]);
-  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomId, setNewRoomId] = useState('');
   const activeRoomId = searchParams.get('room');
-  const { status, hubUrl, connection } = useSignalR(Boolean(activeRoomId), activeRoomId ?? undefined);
+  const { status, connection } = useSignalR(Boolean(activeRoomId), activeRoomId ?? undefined);
   const selectedRoomId = activeRoomId;
 
   useEffect(() => {
@@ -49,15 +49,11 @@ function Game() {
   const loadRooms = useCallback(async () => {
     if (!gameId) return;
 
-    setIsLoadingRooms(true);
-
     try {
       const rooms = await getRoomsForGame(gameId);
       setAvailableRooms(rooms);
     } catch (error) {
       console.error('Failed to load rooms:', error);
-    } finally {
-      setIsLoadingRooms(false);
     }
   }, [gameId]);
 
@@ -124,15 +120,35 @@ function Game() {
         return;
       }
 
+      if (gameId === 'trivia') {
+        navigate(`/game/trivia/room/${room.roomCode}`);
+        return;
+      }
+
+      if (gameId === 'memory') {
+        navigate(`/game/memory/room/${room.roomCode}`);
+        return;
+      }
+
       setSearchParams({ room: room.id });
     } catch (error) {
       console.error('Failed to create room:', error);
     }
   };
 
-  const handleJoinRoom = (room: RoomSummary) => {
+  const handleJoinRoom = (room: RoomListItem) => {
     if (gameId === 'tic-tac-toe') {
       navigate(`/game/tic-tac-toe/room/${room.id}`);
+      return;
+    }
+
+    if (gameId === 'trivia') {
+      navigate(`/game/trivia/room/${room.id}`);
+      return;
+    }
+
+    if (gameId === 'memory') {
+      navigate(`/game/memory/room/${room.id}`);
       return;
     }
 
@@ -176,18 +192,22 @@ function Game() {
                   {activeRoom ? <Badge variant="primary">{activeRoom.id}</Badge> : null}
                 </div>
 
-                <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
-                  <div className="rounded-[8px] border border-[rgba(42,42,58,0.8)] bg-[rgba(17,17,25,0.82)] p-[14px_16px]">
-                    <span className="mb-1 block text-[0.9rem] text-white/35">Players online</span>
-                    <strong>{selectedGame.playersOnline ?? 0}</strong>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[18px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
+                    <span className="mb-2 block text-[1rem] uppercase tracking-[0.2em] text-[#d7ebff]/45">
+                      Players online
+                    </span>
+                    <strong className="text-[2rem] leading-none tracking-[-0.03em] text-[#f2fbff]">
+                      {selectedGame.playersOnline ?? 0}
+                    </strong>
                   </div>
-                  <div className="rounded-[8px] border border-[rgba(42,42,58,0.8)] bg-[rgba(17,17,25,0.82)] p-[14px_16px]">
-                    <span className="mb-1 block text-[0.9rem] text-white/35">Last sync</span>
-                    <strong>{formatDate(details.updatedAt)}</strong>
-                  </div>
-                  <div className="rounded-[8px] border border-[rgba(42,42,58,0.8)] bg-[rgba(17,17,25,0.82)] p-[14px_16px]">
-                    <span className="mb-1 block text-[0.9rem] text-white/35">SignalR hub</span>
-                    <strong>{hubUrl}</strong>
+                  <div className="rounded-[18px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
+                    <span className="mb-2 block text-[1rem] uppercase tracking-[0.2em] text-[#d7ebff]/45">
+                      Last sync
+                    </span>
+                    <strong className="text-[1.5rem] leading-tight text-[#f2fbff]">
+                      {formatDate(details.updatedAt)}
+                    </strong>
                   </div>
                 </div>
 

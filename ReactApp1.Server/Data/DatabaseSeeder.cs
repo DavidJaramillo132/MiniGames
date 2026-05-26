@@ -18,8 +18,7 @@ public sealed class DatabaseSeeder
         await using var connection = _dbFactory.CreateConnection();
         await connection.OpenAsync();
 
-        // Seed game catalog — only tic-tac-toe for now.
-        // Future games (memory, trivia) will be added here.
+        // Seed game catalog.
         const string sql = @"
             INSERT INTO games (slug, name, is_enabled, max_players)
             VALUES (@Slug, @Name, @IsEnabled, @MaxPlayers)
@@ -28,6 +27,8 @@ public sealed class DatabaseSeeder
         var games = new[]
         {
             new { Slug = "tic-tac-toe", Name = "Tic-Tac-Toe", IsEnabled = true, MaxPlayers = 2 },
+            new { Slug = "trivia", Name = "Trivia Quiz", IsEnabled = true, MaxPlayers = 8 },
+            new { Slug = "memory", Name = "Memory Parejas", IsEnabled = true, MaxPlayers = 2 },
         };
 
         foreach (var game in games)

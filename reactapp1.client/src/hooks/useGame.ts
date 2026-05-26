@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { findMatch as requestMatch, getGameDetails, getGames } from '../services/gameService';
-import { getLeaderboard } from '../services/leaderboardService';
+import { getLeaderboard, getMyStats } from '../services/leaderboardService';
 import {
   getGameStoreState,
   setCurrentGame,
@@ -65,9 +65,10 @@ export function useGame() {
 
       setIsDetailsLoading(true);
 
-      const [gameDetails, leaderboard] = await Promise.all([
+      const [gameDetails, leaderboard, stats] = await Promise.all([
         getGameDetails(gameState.selectedGameId),
         getLeaderboard(gameState.selectedGameId),
+        getMyStats(gameState.selectedGameId),
       ]);
 
       if (isCancelled) {
@@ -77,6 +78,7 @@ export function useGame() {
       setDetails({
         ...gameDetails,
         leaderboard,
+        stats,
       });
       setIsDetailsLoading(false);
     };

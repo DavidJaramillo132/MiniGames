@@ -1,1 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Rajdhani:wght@500;600;700&display=swap");
 @import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --playhub-bg: #07111f;
+  --playhub-panel: rgba(8, 18, 34, 0.82);
+  --playhub-panel-strong: rgba(6, 14, 28, 0.94);
+  --playhub-border: rgba(141, 232, 255, 0.14);
+  --playhub-text: #edf6ff;
+  --playhub-muted: rgba(237, 246, 255, 0.66);
+  --playhub-cyan: #78e6ff;
+  --playhub-blue: #4da3ff;
+  --playhub-coral: #ff7b63;
+  --playhub-gold: #ffc76a;
+  --playhub-green: #86f0be;
+}
+
+html {
+  background:
+    radial-gradient(circle at top, rgba(77, 163, 255, 0.16), transparent 26%),
+    radial-gradient(circle at 20% 20%, rgba(120, 230, 255, 0.12), transparent 18%),
+    linear-gradient(180deg, #08111f 0%, #050b15 52%, #03070f 100%);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: transparent;
+  color: var(--playhub-text);
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(120, 230, 255, 0.24);
+  color: #f8fdff;
+}
