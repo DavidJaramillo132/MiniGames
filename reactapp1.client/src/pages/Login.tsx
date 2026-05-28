@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useAuth } from '../hooks/useAuth';
@@ -19,7 +19,8 @@ function GamepadIcon() {
 
 function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { error, login } = useAuth();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: '',
@@ -32,7 +33,10 @@ function Login() {
 
     try {
       await login(credentials);
-      navigate('/home');
+      const from = (location.state as { from?: string } | null)?.from ?? '/home';
+      navigate(from, { replace: true });
+    } catch {
+      // The auth store exposes a friendly error message for the form.
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +120,12 @@ function Login() {
             </div>
 
             <div className="mt-8 grid gap-4">
+              {error ? (
+                <div className="rounded-[18px] border border-[rgba(255,123,99,0.28)] bg-[rgba(255,123,99,0.1)] px-4 py-3 text-sm text-[#ffd5ce]">
+                  {error}
+                </div>
+              ) : null}
+
               <Input
                 label="Email"
                 type="email"

@@ -1,4 +1,5 @@
 import { getStoredToken } from '../utils/tokenHelper';
+import { clearAuthState } from '../store/authStore';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
@@ -25,6 +26,11 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
+
+    if (response.status === 401) {
+      clearAuthState();
+    }
+
     throw new Error(errorText || `HTTP ${response.status}`);
   }
 

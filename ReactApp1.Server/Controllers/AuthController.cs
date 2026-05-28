@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReactApp1.Server.DTOs;
 using ReactApp1.Server.Services;
@@ -62,6 +63,7 @@ public class AuthController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> Me()
     {

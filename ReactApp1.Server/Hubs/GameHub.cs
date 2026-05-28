@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using ReactApp1.Server.Services;
 
 namespace ReactApp1.Server.Hubs
 {
+    [Authorize]
     public class GameHub : Hub
     {
         private readonly ILogger<GameHub> _logger;

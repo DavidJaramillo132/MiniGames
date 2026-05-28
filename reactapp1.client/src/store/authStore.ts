@@ -1,10 +1,26 @@
 import type { AuthSession, AuthState } from '../types/auth.types';
-import { clearStoredSession, getStoredToken, getStoredUser, saveStoredSession } from '../utils/tokenHelper';
+import {
+  clearStoredSession,
+  getStoredToken,
+  getStoredUser,
+  isTokenExpired,
+  saveStoredSession,
+} from '../utils/tokenHelper';
+
+const storedToken = getStoredToken();
+const storedUser = getStoredUser();
+const hasValidStoredSession = Boolean(storedToken && storedUser && !isTokenExpired(storedToken));
+
+if (storedToken && !hasValidStoredSession) {
+  clearStoredSession();
+}
 
 let authState: AuthState = {
-  user: getStoredUser(),
-  token: getStoredToken(),
-  isAuthenticated: Boolean(getStoredToken() && getStoredUser()),
+  user: hasValidStoredSession ? storedUser : null,
+  token: hasValidStoredSession ? storedToken : null,
+  isAuthenticated: hasValidStoredSession,
+  isInitializing: hasValidStoredSession,
+  error: null,
 };
 
 const listeners = new Set<() => void>();
@@ -30,6 +46,8 @@ export function setAuthSession(session: AuthSession) {
     user: session.user,
     token: session.token,
     isAuthenticated: true,
+    isInitializing: false,
+    error: null,
   };
 
   saveStoredSession(session.token, session.user);
@@ -41,8 +59,28 @@ export function clearAuthState() {
     user: null,
     token: null,
     isAuthenticated: false,
+    isInitializing: false,
+    error: null,
   };
 
   clearStoredSession();
+  emitChange();
+}
+
+export function setAuthInitializing(isInitializing: boolean) {
+  authState = {
+    ...authState,
+    isInitializing,
+  };
+
+  emitChange();
+}
+
+export function setAuthError(error: string | null) {
+  authState = {
+    ...authState,
+    error,
+  };
+
   emitChange();
 }

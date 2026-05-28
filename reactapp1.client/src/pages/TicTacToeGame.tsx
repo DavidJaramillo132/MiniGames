@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../hooks/useGame';
+import { getStoredToken } from '../utils/tokenHelper';
 
 type BoardCell = string;
 type PlayerSymbol = 'X' | 'O';
@@ -67,7 +68,9 @@ function TicTacToeGame() {
 
     let isDisposed = false;
     const connection = new HubConnectionBuilder()
-      .withUrl(`${import.meta.env.VITE_SIGNALR_HUB ?? '/gameHub'}`)
+      .withUrl(`${import.meta.env.VITE_SIGNALR_HUB ?? '/gameHub'}`, {
+        accessTokenFactory: () => getStoredToken() ?? '',
+      })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();

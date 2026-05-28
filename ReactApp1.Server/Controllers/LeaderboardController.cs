@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReactApp1.Server.DTOs;
 using ReactApp1.Server.Services;
@@ -40,6 +41,7 @@ public class LeaderboardController : ControllerBase
         return Ok(dtos);
     }
 
+    [Authorize]
     [HttpGet("{gameSlug}/me")]
     public async Task<ActionResult<PlayerStatsDto>> GetMyStats(string gameSlug)
     {

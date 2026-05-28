@@ -1,5 +1,6 @@
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getStoredToken } from '../utils/tokenHelper';
 
 type SignalRStatus = 'idle' | 'connecting' | 'connected';
 
@@ -22,7 +23,9 @@ export function useSignalR(enabled = false, roomId?: string) {
 
     // Prepara la conexión para el backend real, mientras mantenemos un flujo mockeado en frontend.
     connectionRef.current = new HubConnectionBuilder()
-      .withUrl(hubUrl)
+      .withUrl(hubUrl, {
+        accessTokenFactory: () => getStoredToken() ?? '',
+      })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();

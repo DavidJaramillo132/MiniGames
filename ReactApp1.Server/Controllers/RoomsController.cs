@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReactApp1.Server.DTOs;
 using ReactApp1.Server.Services;
@@ -56,6 +57,7 @@ public class RoomsController : ControllerBase
             room.CreatedAt.ToString("o")));
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<RoomDto>> CreateRoom([FromBody] CreateRoomRequest request)
     {
@@ -92,6 +94,7 @@ public class RoomsController : ControllerBase
         return CreatedAtAction(nameof(GetRoom), new { roomCode = room.RoomCode }, dto);
     }
 
+    [Authorize]
     [HttpDelete("{roomCode}")]
     public async Task<IActionResult> DeleteRoom(string roomCode)
     {

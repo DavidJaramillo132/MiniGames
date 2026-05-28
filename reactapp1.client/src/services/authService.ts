@@ -52,6 +52,10 @@ export async function register(fields: RegistrationFields): Promise<AuthSession>
   return mapApiResponse(response);
 }
 
+export async function getCurrentUser(): Promise<AuthSession['user']> {
+  return apiFetch<AuthSession['user']>('/auth/me');
+}
+
 export async function logout(): Promise<void> {
   // JWT is stateless — just clear the local session.
   // If we add refresh tokens later, we'd call a server endpoint here.

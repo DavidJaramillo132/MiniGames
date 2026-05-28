@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from '../components/layout/ProtectedRoute';
-import { useAuth } from '../hooks/useAuth';
+import PublicRoute from '../components/layout/PublicRoute';
 import Game from '../pages/Game';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
@@ -11,18 +11,15 @@ import TriviaGame from '../pages/TriviaGame';
 import Register from '../pages/Register';
 
 export default function AppRoutes() {
-  const { isAuthenticated } = useAuth();
-
   return (
     <Routes>
       <Route path="/" element={<Presentation />} />
-      <Route
-        path="/app"
-        element={<Navigate to={isAuthenticated ? '/home' : '/login'} replace />}
-      />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Route>
       <Route element={<ProtectedRoute />}>
+        <Route path="/app" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
         <Route path="/game/:gameId" element={<Game />} />
         <Route path="/game/tic-tac-toe/room/:roomId" element={<TicTacToeGame />} />

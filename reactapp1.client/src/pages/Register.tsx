@@ -48,7 +48,7 @@ function calculateStrength(password: string) {
 
 function Register() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { error, register } = useAuth();
   const [fields, setFields] = useState<RegistrationFields>({
     username: '',
     email: '',
@@ -63,11 +63,17 @@ function Register() {
   const strengthCopy = strengthLevels[Math.max(strength - 1, 0)];
 
   const handleCreateAccount = async () => {
+    if (fields.password !== fields.confirmPassword) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await register(fields);
-      navigate('/home');
+      navigate('/home', { replace: true });
+    } catch {
+      // The auth store exposes a friendly error message for the form.
     } finally {
       setIsLoading(false);
     }
@@ -151,6 +157,12 @@ function Register() {
             </div>
 
             <div className="mt-8 grid gap-4">
+              {error ? (
+                <div className="rounded-[18px] border border-[rgba(255,123,99,0.28)] bg-[rgba(255,123,99,0.1)] px-4 py-3 text-sm text-[#ffd5ce]">
+                  {error}
+                </div>
+              ) : null}
+
               <Input
                 label="Username"
                 type="text"
@@ -205,11 +217,21 @@ function Register() {
                 }
                 actionLabel={showConfirmPassword ? 'Hide' : 'Show'}
                 onActionClick={() => setShowConfirmPassword((current) => !current)}
+                helpText={
+                  fields.confirmPassword && fields.password !== fields.confirmPassword
+                    ? 'Las contrasenas no coinciden.'
+                    : undefined
+                }
               />
             </div>
 
             <div className="mt-6 grid gap-4">
-              <Button fullWidth isLoading={isLoading} onClick={handleCreateAccount}>
+              <Button
+                fullWidth
+                isLoading={isLoading}
+                onClick={handleCreateAccount}
+                disabled={Boolean(fields.confirmPassword && fields.password !== fields.confirmPassword)}
+              >
                 {isLoading ? 'Creating account...' : 'Create challenger profile'}
               </Button>
 
