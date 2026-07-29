@@ -3,18 +3,17 @@ import { useEffect } from 'react';
 import AppRoutes from './routes/AppRoutes';
 import { useAuth } from './hooks/useAuth';
 import { getTokenExpiration } from './utils/tokenHelper';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 function App() {
   const { initializeSession, logout, token } = useAuth();
 
   useEffect(() => {
     void initializeSession();
-  }, []);
+  }, [initializeSession]);
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
+    if (!token) { return; }
 
     const expiresAt = getTokenExpiration(token);
 
@@ -28,11 +27,13 @@ function App() {
     }, Math.max(0, expiresAt - Date.now()));
 
     return () => window.clearTimeout(timeout);
-  }, [token]);
+  }, [token, logout]);
 
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

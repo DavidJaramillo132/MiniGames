@@ -1,86 +1,65 @@
-import type { AuthSession, AuthState } from '../types/auth.types';
-import {
-  clearStoredSession,
-  getStoredToken,
-  getStoredUser,
-  isTokenExpired,
-  saveStoredSession,
-} from '../utils/tokenHelper';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { AuthSession, UserProfile } from '../types/auth.types';
 
-const storedToken = getStoredToken();
-const storedUser = getStoredUser();
-const hasValidStoredSession = Boolean(storedToken && storedUser && !isTokenExpired(storedToken));
-
-if (storedToken && !hasValidStoredSession) {
-  clearStoredSession();
+interface AuthStore {
+  user: UserProfile | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isInitializing: boolean;
+  error: string | null;
+  setAuthSession: (session: AuthSession) => void;
+  clearAuthState: () => void;
+  setAuthInitializing: (value: boolean) => void;
+  setAuthError: (error: string | null) => void;
 }
 
-let authState: AuthState = {
-  user: hasValidStoredSession ? storedUser : null,
-  token: hasValidStoredSession ? storedToken : null,
-  isAuthenticated: hasValidStoredSession,
-  isInitializing: hasValidStoredSession,
-  error: null,
-};
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isInitializing: false,
+      error: null,
+      setAuthSession: (session) =>
+        set({
+          user: session.user,
+          token: session.token,
+          isAuthenticated: true,
+          isInitializing: false,
+          error: null,
+        }),
+      clearAuthState: () =>
+        set((state) => {
+          if (
+            state.user === null &&
+            state.token === null &&
+            !state.isAuthenticated &&
+            !state.isInitializing &&
+            state.error === null
+          ) {
+            return state;
+          }
 
-const listeners = new Set<() => void>();
-
-function emitChange() {
-  listeners.forEach((listener) => listener());
-}
-
-export function getAuthStoreState() {
-  return authState;
-}
-
-export function subscribeToAuthStore(listener: () => void) {
-  listeners.add(listener);
-
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-export function setAuthSession(session: AuthSession) {
-  authState = {
-    user: session.user,
-    token: session.token,
-    isAuthenticated: true,
-    isInitializing: false,
-    error: null,
-  };
-
-  saveStoredSession(session.token, session.user);
-  emitChange();
-}
-
-export function clearAuthState() {
-  authState = {
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isInitializing: false,
-    error: null,
-  };
-
-  clearStoredSession();
-  emitChange();
-}
-
-export function setAuthInitializing(isInitializing: boolean) {
-  authState = {
-    ...authState,
-    isInitializing,
-  };
-
-  emitChange();
-}
-
-export function setAuthError(error: string | null) {
-  authState = {
-    ...authState,
-    error,
-  };
-
-  emitChange();
-}
+          return {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isInitializing: false,
+            error: null,
+          };
+        }),
+      setAuthInitializing: (value) => set({ isInitializing: value }),
+      setAuthError: (error) => set({ error }),
+    }),
+    {
+      name: 'playhub-auth',
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    },
+  ),
+);

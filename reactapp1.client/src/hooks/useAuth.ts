@@ -1,43 +1,39 @@
-import { useSyncExternalStore } from 'react';
+import { useAuthStore } from '../store/authStore';
+import { useCallback } from 'react';
 import {
-  getCurrentUser,
   login as loginService,
   logout as logoutService,
   register as registerService,
+  getCurrentUser,
 } from '../services/authService';
-import {
-  clearAuthState,
-  getAuthStoreState,
-  setAuthError,
-  setAuthInitializing,
-  setAuthSession,
-  subscribeToAuthStore,
-} from '../store/authStore';
 import type { LoginCredentials, RegistrationFields } from '../types/auth.types';
-import { getStoredToken, isTokenExpired } from '../utils/tokenHelper';
 
 function getFriendlyAuthError(error: unknown) {
   if (error instanceof Error) {
     if (error.message.includes('Invalid email or password')) {
-      return 'El correo o la contrasena no son correctos.';
+      return 'Invalid email or password.';
     }
-
     if (error.message.includes('already') || error.message.includes('Conflict')) {
-      return 'Ya existe una cuenta con esos datos.';
+      return 'An account with that information already exists.';
     }
   }
-
-  return 'No pudimos completar la autenticacion. Intentalo otra vez.';
+  return 'Authentication failed. Please try again.';
 }
 
 export function useAuth() {
-  const state = useSyncExternalStore(
-    subscribeToAuthStore,
-    getAuthStoreState,
-    getAuthStoreState,
-  );
+  const {
+    user,
+    token,
+    isAuthenticated,
+    isInitializing,
+    error,
+    setAuthSession,
+    clearAuthState,
+    setAuthInitializing,
+    setAuthError,
+  } = useAuthStore();
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials) => {
     try {
       setAuthError(null);
       const session = await loginService(credentials);
@@ -47,9 +43,9 @@ export function useAuth() {
       setAuthError(getFriendlyAuthError(error));
       throw error;
     }
-  };
+  }, [setAuthError, setAuthSession]);
 
-  const register = async (fields: RegistrationFields) => {
+  const register = useCallback(async (fields: RegistrationFields) => {
     try {
       setAuthError(null);
       const session = await registerService(fields);
@@ -59,32 +55,34 @@ export function useAuth() {
       setAuthError(getFriendlyAuthError(error));
       throw error;
     }
-  };
+  }, [setAuthError, setAuthSession]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await logoutService();
     clearAuthState();
-  };
+  }, [clearAuthState]);
 
-  const initializeSession = async () => {
-    const token = getStoredToken();
-
-    if (!token || isTokenExpired(token)) {
+  const initializeSession = useCallback(async () => {
+    const storeToken = useAuthStore.getState().token;
+    if (!storeToken) {
       clearAuthState();
       return;
     }
-
     try {
       setAuthInitializing(true);
-      const user = await getCurrentUser();
-      setAuthSession({ token, user });
+      const userData = await getCurrentUser();
+      setAuthSession({ token: storeToken, user: userData });
     } catch {
       clearAuthState();
     }
-  };
+  }, [clearAuthState, setAuthInitializing, setAuthSession]);
 
   return {
-    ...state,
+    user,
+    token,
+    isAuthenticated,
+    isInitializing,
+    error,
     login,
     register,
     logout,

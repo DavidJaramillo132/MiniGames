@@ -81,17 +81,6 @@ function renderGameIcon(game: Game) {
     );
   }
 
-  if (game.id === 'batalla-naval') {
-    return (
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M4 16h16" />
-        <path d="M7 16l2-8h6l2 8" />
-        <path d="M11 8V4h2" />
-        <path d="M3 18c1.2 1.1 2.5 1.6 3.9 1.6 1.4 0 2.8-.5 4.1-1.6 1.3 1.1 2.6 1.6 4 1.6s2.7-.5 4-1.6" />
-      </svg>
-    );
-  }
-
   if (game.id === 'memory') {
     return (
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8">

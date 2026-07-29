@@ -1,4 +1,5 @@
 import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
 
 export interface RoomListItem {
   id: string;
@@ -37,10 +38,10 @@ function RoomList({
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-4">
         <div className="grid min-h-0 content-start gap-3 overflow-auto pr-1">
           {rooms.length === 0 ? (
-            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-center text-[#f5f7ff]/68">
-              <span>No rooms available yet.</span>
-              <Button onClick={onCreateRoom}>Create the first room</Button>
-            </div>
+            <EmptyState
+              title="No rooms available yet."
+              action={{ label: 'Create the first room', onClick: onCreateRoom }}
+            />
           ) : (
             rooms.map((room) => (
               <button
@@ -79,9 +80,7 @@ function RoomList({
             variant="surface"
             disabled={!selectedRoom}
             onClick={() => {
-              if (selectedRoom) {
-                onJoinRoom(selectedRoom);
-              }
+              if (selectedRoom) { onJoinRoom(selectedRoom); }
             }}
           >
             Join Room

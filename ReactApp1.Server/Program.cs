@@ -60,8 +60,9 @@ builder.Services.AddAuthentication(options =>
         {
             var accessToken = context.Request.Query["access_token"];
 
-            if (!string.IsNullOrEmpty(accessToken) &&
-                context.HttpContext.Request.Path.StartsWithSegments("/gameHub"))
+             if (!string.IsNullOrEmpty(accessToken) &&
+                 (context.HttpContext.Request.Path.StartsWithSegments("/gameHub") ||
+                  context.HttpContext.Request.Path.StartsWithSegments("/presenceHub")))
             {
                 context.Token = accessToken;
             }
@@ -85,6 +86,7 @@ builder.Services.AddScoped<IGameCatalogService, GameCatalogService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+builder.Services.AddSingleton<PresenceTracker>();
 
 // ── Build ────────────────────────────────────────────────────────────────────
 
@@ -131,5 +133,6 @@ app.MapFallbackToFile("/index.html");
 
 // SignalR hub
 app.MapHub<ReactApp1.Server.Hubs.GameHub>("/gameHub");
+app.MapHub<ReactApp1.Server.Hubs.PresenceHub>("/presenceHub");
 
 app.Run();

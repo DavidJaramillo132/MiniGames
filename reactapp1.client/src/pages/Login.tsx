@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import ErrorFallback from '../components/ui/ErrorFallback';
 import { useAuth } from '../hooks/useAuth';
 import type { LoginCredentials } from '../types/auth.types';
 
@@ -20,23 +21,20 @@ function GamepadIcon() {
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { error, login } = useAuth();
-  const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
-    password: '',
-  });
+  const auth = useAuth();
+  const { error, login } = auth;
+  const [credentials, setCredentials] = useState<LoginCredentials>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignIn = async () => {
     setIsLoading(true);
-
     try {
       await login(credentials);
       const from = (location.state as { from?: string } | null)?.from ?? '/home';
       navigate(from, { replace: true });
     } catch {
-      // The auth store exposes a friendly error message for the form.
+      // The auth store exposes the error message for the form.
     } finally {
       setIsLoading(false);
     }
@@ -55,12 +53,8 @@ function Login() {
                   <GamepadIcon />
                 </div>
                 <div>
-                  <div className="font-['Rajdhani'] text-[2.5rem] font-bold uppercase tracking-[0.08em]">
-                    PlayHub
-                  </div>
-                  <div className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">
-                    Competitive return
-                  </div>
+                  <div className="font-['Rajdhani'] text-[2.5rem] font-bold uppercase tracking-[0.08em]">PlayHub</div>
+                  <div className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">Competitive return</div>
                 </div>
               </div>
 
@@ -70,20 +64,15 @@ function Login() {
                   <span className="block text-[#78e6ff]">the arena.</span>
                 </h1>
                 <p className="max-w-[420px] text-[1rem] leading-8 text-[#d6e8f8]/68">
-                  Revisa tu progreso, vuelve al lobby y sigue empujando tu ranking en partidas
-                  competitivas con una experiencia mucho mas clara y viva.
+                  Check your progress, return to the lobby, and keep pushing your rank in competitive matches with a much clearer and livelier experience.
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4">
               <article className="rounded-[24px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.03)] p-5">
-                <p className="text-[0.78rem] uppercase tracking-[0.22em] text-[#97dafc]/62">
-                  Hoy en PlayHub
-                </p>
-                <p className="mt-3 text-[1.7rem] font-semibold text-[#f7fbff]">
-                  Nuevos duelos, nuevas rachas, nuevas posiciones.
-                </p>
+                <p className="text-[0.78rem] uppercase tracking-[0.22em] text-[#97dafc]/62">Today on PlayHub</p>
+                <p className="mt-3 text-[1.7rem] font-semibold text-[#f7fbff]">New duels, new streaks, new positions.</p>
               </article>
             </div>
           </div>
@@ -97,33 +86,21 @@ function Login() {
                   <GamepadIcon />
                 </div>
                 <div>
-                  <div className="font-['Rajdhani'] text-[2.2rem] font-bold uppercase tracking-[0.08em]">
-                    PlayHub
-                  </div>
-                  <div className="text-[0.76rem] uppercase tracking-[0.24em] text-[#97dafc]/68">
-                    Competitive return
-                  </div>
+                  <div className="font-['Rajdhani'] text-[2.2rem] font-bold uppercase tracking-[0.08em]">PlayHub</div>
+                  <div className="text-[0.76rem] uppercase tracking-[0.24em] text-[#97dafc]/68">Competitive return</div>
                 </div>
               </div>
             </div>
 
             <div className="grid gap-3">
-              <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">
-                Sign in
-              </p>
-              <h2 className="text-[2.4rem] font-bold tracking-[-0.05em] text-[#f7fbff]">
-                Welcome back
-              </h2>
-              <p className="text-[#d6e8f8]/66">
-                Entra a tu cuenta y vuelve a competir donde lo dejaste.
-              </p>
+              <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">Sign in</p>
+              <h2 className="text-[2.4rem] font-bold tracking-[-0.05em] text-[#f7fbff]">Welcome back</h2>
+              <p className="text-[#d6e8f8]/66">Sign in to your account and get back to competing where you left off.</p>
             </div>
 
             <div className="mt-8 grid gap-4">
               {error ? (
-                <div className="rounded-[18px] border border-[rgba(255,123,99,0.28)] bg-[rgba(255,123,99,0.1)] px-4 py-3 text-sm text-[#ffd5ce]">
-                  {error}
-                </div>
+                <ErrorFallback message={error} onRetry={() => void handleSignIn()} />
               ) : null}
 
               <Input
@@ -151,12 +128,8 @@ function Login() {
               </Button>
 
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                <Button variant="ghost" onClick={() => navigate('/register')}>
-                  Create account
-                </Button>
-                <Button variant="ghost" onClick={() => undefined}>
-                  Forgot password?
-                </Button>
+                <Button variant="ghost" onClick={() => navigate('/register')}>Create account</Button>
+                <Button variant="ghost" onClick={() => undefined}>Forgot password?</Button>
               </div>
             </div>
           </div>

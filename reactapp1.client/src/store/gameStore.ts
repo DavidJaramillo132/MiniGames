@@ -1,46 +1,26 @@
-interface GameStoreState {
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface GameStore {
   selectedGameId: string | null;
   currentGameId: string | null;
   queuedAt: string | null;
+  setSelectedGame: (gameId: string) => void;
+  setCurrentGame: (gameId: string, queuedAt: string) => void;
 }
 
-let gameState: GameStoreState = {
-  selectedGameId: 'batalla-naval',
-  currentGameId: null,
-  queuedAt: null,
-};
-
-const listeners = new Set<() => void>();
-
-function emitChange() {
-  listeners.forEach((listener) => listener());
-}
-
-export function getGameStoreState() {
-  return gameState;
-}
-
-export function subscribeToGameStore(listener: () => void) {
-  listeners.add(listener);
-
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-export function setSelectedGame(gameId: string) {
-  gameState = {
-    ...gameState,
-    selectedGameId: gameId,
-  };
-  emitChange();
-}
-
-export function setCurrentGame(gameId: string, queuedAt: string) {
-  gameState = {
-    ...gameState,
-    currentGameId: gameId,
-    queuedAt,
-  };
-  emitChange();
-}
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set) => ({
+      selectedGameId: 'tic-tac-toe',
+      currentGameId: null,
+      queuedAt: null,
+      setSelectedGame: (gameId) => set({ selectedGameId: gameId }),
+      setCurrentGame: (gameId, queuedAt) => set({ currentGameId: gameId, queuedAt }),
+    }),
+    {
+      name: 'playhub-game',
+      partialize: (state) => ({ selectedGameId: state.selectedGameId }),
+    },
+  ),
+);

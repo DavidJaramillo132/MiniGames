@@ -22,14 +22,35 @@ public sealed class RoomService : IRoomService
     {
         roomCode ??= Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
 
+        await using var conn = _db.CreateConnection();
+        await conn.OpenAsync();
+        await using var tx = await conn.BeginTransactionAsync();
+
+        // Check if the room_code is already taken
+        var existing = await conn.QuerySingleOrDefaultAsync<Room>(
+            "SELECT * FROM rooms WHERE room_code = @RoomCode;",
+            new { RoomCode = roomCode }, tx);
+
+        if (existing is not null)
+        {
+            if (existing.Status is "finished" or "closed")
+            {
+                // Reclaim the code by deleting the old inactive room
+                await conn.ExecuteAsync(
+                    "DELETE FROM rooms WHERE id = @Id;",
+                    new { existing.Id }, tx);
+            }
+            else
+            {
+                await tx.RollbackAsync();
+                throw new InvalidOperationException($"A room with code '{roomCode}' already exists and is still active.");
+            }
+        }
+
         const string sql = @"
             INSERT INTO rooms (id, game_slug, name, room_code, status, capacity, current_players, creator_user_id, created_at, updated_at)
             VALUES (@Id, @GameSlug, @Name, @RoomCode, 'waiting', 2, 0, @CreatorUserId, now(), now())
             RETURNING *;";
-
-        await using var conn = _db.CreateConnection();
-        await conn.OpenAsync();
-        await using var tx = await conn.BeginTransactionAsync();
 
         var room = await conn.QuerySingleAsync<Room>(sql, new
         {

@@ -16,14 +16,7 @@ const iconByGameId: Record<string, ReactNode> = {
       <circle cx="12" cy="12" r="9" />
     </svg>
   ),
-  'batalla-naval': (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 16h16" />
-      <path d="M7 16l2-8h6l2 8" />
-      <path d="M11 8V4h2" />
-      <path d="M3 18c1.2 1.1 2.5 1.6 3.9 1.6 1.4 0 2.8-.5 4.1-1.6 1.3 1.1 2.6 1.6 4 1.6s2.7-.5 4-1.6" />
-    </svg>
-  ),
+
   trivia: (
     <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M9.5 9a2.5 2.5 0 1 1 4.4 1.6c-.7.8-1.9 1.5-1.9 2.9" />

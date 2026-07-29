@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
-import { useGame } from '../hooks/useGame';
+import { usePresence } from '../hooks/usePresence';
 
 interface TriviaQuestion {
   question: string;
@@ -32,7 +32,7 @@ const questions: TriviaQuestion[] = [
 function TriviaGame() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
-  const { totalPlayersOnline } = useGame();
+  const { totalOnline, gameOnline } = usePresence('trivia');
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -77,7 +77,7 @@ function TriviaGame() {
     <main className="min-h-screen bg-transparent text-[#edf6ff]">
       <div className="relative min-h-screen">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(76,201,240,0.16),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.1),transparent_20%)]" />
-        <Navbar onlineCount={totalPlayersOnline} />
+        <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
 
         <section className="relative px-6 py-7 max-sm:px-4">
           <div className="mx-auto grid max-w-6xl gap-5">

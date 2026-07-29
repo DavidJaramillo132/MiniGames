@@ -1,17 +1,12 @@
-import { getStoredToken } from '../utils/tokenHelper';
-import { clearAuthState } from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
-/**
- * Authenticated fetch wrapper.
- * Automatically attaches the JWT token from localStorage if available.
- */
 export async function apiFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
-  const token = getStoredToken();
+  const token = useAuthStore.getState().token;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -28,13 +23,12 @@ export async function apiFetch<T>(
     const errorText = await response.text().catch(() => 'Unknown error');
 
     if (response.status === 401) {
-      clearAuthState();
+      useAuthStore.getState().clearAuthState();
     }
 
     throw new Error(errorText || `HTTP ${response.status}`);
   }
 
-  // Handle 204 No Content
   if (response.status === 204) {
     return undefined as T;
   }

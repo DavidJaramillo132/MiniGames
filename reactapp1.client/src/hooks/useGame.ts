@@ -1,20 +1,11 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { findMatch as requestMatch, getGameDetails, getGames } from '../services/gameService';
 import { getLeaderboard, getMyStats } from '../services/leaderboardService';
-import {
-  getGameStoreState,
-  setCurrentGame,
-  setSelectedGame,
-  subscribeToGameStore,
-} from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
 import type { Game, GameDetails, MatchSession } from '../types/game.types';
 
 export function useGame() {
-  const gameState = useSyncExternalStore(
-    subscribeToGameStore,
-    getGameStoreState,
-    getGameStoreState,
-  );
+  const { selectedGameId, currentGameId, queuedAt, setSelectedGame, setCurrentGame } = useGameStore();
   const [games, setGames] = useState<Game[]>([]);
   const [details, setDetails] = useState<GameDetails | null>(null);
   const [isLobbyLoading, setIsLobbyLoading] = useState(true);
@@ -28,36 +19,29 @@ export function useGame() {
       setIsLobbyLoading(true);
       const lobbyGames = await getGames();
 
-      if (isCancelled) {
-        return;
-      }
+      if (isCancelled) { return; }
 
       setGames(lobbyGames);
       setIsLobbyLoading(false);
 
-      const currentSelection = getGameStoreState().selectedGameId;
+      const currentSelection = useGameStore.getState().selectedGameId;
 
       if (!currentSelection) {
         const fallbackGame = lobbyGames.find((game) => game.isAvailable);
-
-        if (fallbackGame) {
-          setSelectedGame(fallbackGame.id);
-        }
+        if (fallbackGame) { setSelectedGame(fallbackGame.id); }
       }
     };
 
     void loadLobby();
 
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
+    return () => { isCancelled = true; };
+  }, [setSelectedGame]);
 
   useEffect(() => {
     let isCancelled = false;
 
     const loadDetails = async () => {
-      if (!gameState.selectedGameId) {
+      if (!selectedGameId) {
         setDetails(null);
         setIsDetailsLoading(false);
         return;
@@ -65,30 +49,32 @@ export function useGame() {
 
       setIsDetailsLoading(true);
 
-      const [gameDetails, leaderboard, stats] = await Promise.all([
-        getGameDetails(gameState.selectedGameId),
-        getLeaderboard(gameState.selectedGameId),
-        getMyStats(gameState.selectedGameId),
-      ]);
+      try {
+        const [gameDetails, leaderboard, stats] = await Promise.all([
+          getGameDetails(selectedGameId),
+          getLeaderboard(selectedGameId),
+          getMyStats(selectedGameId),
+        ]);
 
-      if (isCancelled) {
-        return;
+        if (isCancelled) { return; }
+
+        setDetails({
+          ...gameDetails,
+          leaderboard,
+          stats: { ...stats, gameName: gameDetails.gameName },
+        });
+      } catch (error) {
+        console.error('Failed to load game details:', error);
+        if (!isCancelled) { setDetails(null); }
+      } finally {
+        if (!isCancelled) { setIsDetailsLoading(false); }
       }
-
-      setDetails({
-        ...gameDetails,
-        leaderboard,
-        stats,
-      });
-      setIsDetailsLoading(false);
     };
 
     void loadDetails();
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [gameState.selectedGameId]);
+    return () => { isCancelled = true; };
+  }, [selectedGameId]);
 
   const totalPlayersOnline = useMemo(
     () => games.reduce((sum, game) => sum + (game.playersOnline ?? 0), 0),
@@ -96,19 +82,17 @@ export function useGame() {
   );
 
   const selectedGame = useMemo(
-    () => games.find((game) => game.id === gameState.selectedGameId) ?? null,
-    [games, gameState.selectedGameId],
+    () => games.find((game) => game.id === selectedGameId) ?? null,
+    [games, selectedGameId],
   );
 
   const findMatch = async (): Promise<MatchSession | null> => {
-    if (!gameState.selectedGameId) {
-      return null;
-    }
+    if (!selectedGameId) { return null; }
 
     setIsFindingMatch(true);
 
     try {
-      const match = await requestMatch(gameState.selectedGameId);
+      const match = await requestMatch(selectedGameId);
       setCurrentGame(match.gameId, match.queuedAt);
       return match;
     } finally {
@@ -120,9 +104,9 @@ export function useGame() {
     games,
     details,
     selectedGame,
-    selectedGameId: gameState.selectedGameId,
-    currentGameId: gameState.currentGameId,
-    queuedAt: gameState.queuedAt,
+    selectedGameId,
+    currentGameId,
+    queuedAt,
     totalPlayersOnline,
     isLobbyLoading,
     isDetailsLoading,

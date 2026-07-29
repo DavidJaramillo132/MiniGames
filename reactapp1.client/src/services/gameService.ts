@@ -1,5 +1,5 @@
 import { apiFetch } from './api';
-import type { Game, GameDetails, MatchSession } from '../types/game.types';
+import type { Game, GameInfo, MatchSession } from '../types/game.types';
 
 // ── Room summary type (used by Game.tsx) ─────────────────────────────────────
 
@@ -53,7 +53,7 @@ export async function getGames(): Promise<Game[]> {
   }));
 }
 
-export async function getGameDetails(gameId: string): Promise<GameDetails> {
+export async function getGameDetails(gameId: string): Promise<GameInfo> {
   const [games, gameById] = await Promise.all([
     apiFetch<GameApiResponse[]>('/games'),
     apiFetch<GameApiResponse>(`/games/${encodeURIComponent(gameId)}`).catch(() => null),
@@ -66,16 +66,6 @@ export async function getGameDetails(gameId: string): Promise<GameDetails> {
     gameName: game.name,
     roomStatus: 'Queue open',
     updatedAt: new Date().toISOString(),
-    leaderboard: [],
-    stats: {
-      gameName: game.name,
-      tiles: [
-        { label: 'Victories', value: '—', note: 'Login to see stats' },
-        { label: 'ELO', value: '1500', note: 'Starting rating' },
-        { label: 'Matches played', value: '—', note: 'Play to earn stats' },
-        { label: 'Win streak', value: '—', note: 'Start playing!' },
-      ],
-    },
   };
 }
 

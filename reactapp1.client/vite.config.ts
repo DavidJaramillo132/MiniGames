@@ -24,7 +24,13 @@ export default defineConfig({
                 secure: false,
                 changeOrigin: true,
                 ws: true,
-            }
+            },
+            '/presenceHub': {
+                target: 'https://localhost:7037',
+                secure: false,
+                changeOrigin: true,
+                ws: true,
+            },
         }
     },
 });

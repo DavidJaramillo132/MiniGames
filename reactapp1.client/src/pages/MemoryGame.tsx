@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
-import { useGame } from '../hooks/useGame';
+import { usePresence } from '../hooks/usePresence';
 
 interface MemoryCard {
   id: number;
@@ -35,7 +35,7 @@ function createDeck(): MemoryCard[] {
 function MemoryGame() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
-  const { totalPlayersOnline } = useGame();
+  const { totalOnline, gameOnline } = usePresence('memory');
   const [cards, setCards] = useState<MemoryCard[]>(() => createDeck());
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -103,7 +103,7 @@ function MemoryGame() {
     <main className="min-h-screen bg-transparent text-[#edf6ff]">
       <div className="relative min-h-screen">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(224,165,38,0.16),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(134,240,190,0.1),transparent_20%)]" />
-        <Navbar onlineCount={totalPlayersOnline} />
+        <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
 
         <section className="relative px-6 py-7 max-sm:px-4">
           <div className="mx-auto grid max-w-6xl gap-5">

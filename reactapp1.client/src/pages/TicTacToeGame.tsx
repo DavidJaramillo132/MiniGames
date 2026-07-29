@@ -6,7 +6,8 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../hooks/useGame';
-import { getStoredToken } from '../utils/tokenHelper';
+import { useAuthStore } from '../store/authStore';
+import { usePresence } from '../hooks/usePresence';
 
 type BoardCell = string;
 type PlayerSymbol = 'X' | 'O';
@@ -34,7 +35,8 @@ const emptyBoard: BoardCell[] = Array.from({ length: 9 }, () => '');
 function TicTacToeGame() {
   const navigate = useNavigate();
   const { roomId, gameId } = useParams<{ roomId: string; gameId?: string }>();
-  const { totalPlayersOnline, selectGame } = useGame();
+  const { selectGame } = useGame();
+  const { totalOnline, gameOnline } = usePresence('tic-tac-toe');
   const { user } = useAuth();
   const connectionRef = useRef<HubConnection | null>(null);
   const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -69,7 +71,7 @@ function TicTacToeGame() {
     let isDisposed = false;
     const connection = new HubConnectionBuilder()
       .withUrl(`${import.meta.env.VITE_SIGNALR_HUB ?? '/gameHub'}`, {
-        accessTokenFactory: () => getStoredToken() ?? '',
+        accessTokenFactory: () => useAuthStore.getState().token ?? '',
       })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
@@ -254,7 +256,7 @@ function TicTacToeGame() {
       <div className="relative min-h-screen">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,230,255,0.12),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.08),transparent_20%)]" />
 
-        <Navbar onlineCount={totalPlayersOnline} />
+         <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
 
         <section className="relative px-6 py-7 max-sm:px-4">
           <div className="mx-auto grid max-w-7xl gap-5">

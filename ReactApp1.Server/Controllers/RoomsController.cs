@@ -74,24 +74,31 @@ public class RoomsController : ControllerBase
             userId = parsedId;
         }
 
-        var room = await _roomService.CreateRoomAsync(
-            request.GameSlug.Trim(),
-            request.Name.Trim(),
-            request.RoomCode?.Trim(),
-            userId);
+        try
+        {
+            var room = await _roomService.CreateRoomAsync(
+                request.GameSlug.Trim(),
+                request.Name.Trim(),
+                request.RoomCode?.Trim(),
+                userId);
 
-        var dto = new RoomDto(
-            room.Id.ToString(),
-            room.GameSlug,
-            room.Name,
-            room.RoomCode,
-            room.Status,
-            room.Capacity,
-            room.CurrentPlayers,
-            room.CreatorUsername ?? "Host",
-            room.CreatedAt.ToString("o"));
+            var dto = new RoomDto(
+                room.Id.ToString(),
+                room.GameSlug,
+                room.Name,
+                room.RoomCode,
+                room.Status,
+                room.Capacity,
+                room.CurrentPlayers,
+                room.CreatorUsername ?? "Host",
+                room.CreatedAt.ToString("o"));
 
-        return CreatedAtAction(nameof(GetRoom), new { roomCode = room.RoomCode }, dto);
+            return CreatedAtAction(nameof(GetRoom), new { roomCode = room.RoomCode }, dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [Authorize]

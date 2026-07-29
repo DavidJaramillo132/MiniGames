@@ -25,7 +25,7 @@ public sealed class LeaderboardService : ILeaderboardService
             FROM player_stats ps
             JOIN users u ON ps.user_id = u.id
             WHERE ps.game_slug = @GameSlug
-            ORDER BY ps.elo DESC
+            ORDER BY ps.wins DESC
             LIMIT @Limit;";
 
         await using var conn = _db.CreateConnection();

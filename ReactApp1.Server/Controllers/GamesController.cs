@@ -9,10 +9,12 @@ namespace ReactApp1.Server.Controllers;
 public class GamesController : ControllerBase
 {
     private readonly IGameCatalogService _gameCatalogService;
+    private readonly PresenceTracker _presenceTracker;
 
-    public GamesController(IGameCatalogService gameCatalogService)
+    public GamesController(IGameCatalogService gameCatalogService, PresenceTracker presenceTracker)
     {
         _gameCatalogService = gameCatalogService;
+        _presenceTracker = presenceTracker;
     }
 
     // Accent colors per game slug for the frontend
@@ -33,7 +35,7 @@ public class GamesController : ControllerBase
             g.Name,
             GetDescription(g.Slug),
             AccentColors.GetValueOrDefault(g.Slug, "#534AB7"),
-            0, // playersOnline — will be computed from active connections later
+             _presenceTracker.GetSnapshot().Games.GetValueOrDefault(g.Slug, 0),
             g.IsEnabled,
             g.IsEnabled ? null : "Coming soon"));
 
@@ -55,7 +57,7 @@ public class GamesController : ControllerBase
             game.Name,
             GetDescription(game.Slug),
             AccentColors.GetValueOrDefault(game.Slug, "#534AB7"),
-            0,
+             _presenceTracker.GetSnapshot().Games.GetValueOrDefault(game.Slug, 0),
             game.IsEnabled,
             game.IsEnabled ? null : "Coming soon"));
     }

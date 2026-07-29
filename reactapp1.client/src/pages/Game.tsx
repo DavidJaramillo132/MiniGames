@@ -3,6 +3,8 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Spinner from '../components/ui/Spinner';
+import ErrorBoundary from '../components/ui/ErrorBoundary';
+import ErrorFallback from '../components/ui/ErrorFallback';
 import Navbar from '../components/layout/Navbar';
 import CreateRoomModal from '../components/game/CreateRoomModal';
 import Leaderboard from '../components/game/Leaderboard';
@@ -11,6 +13,7 @@ import StatsPanel from '../components/game/StatsPanel';
 import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../hooks/useGame';
 import { useSignalR } from '../hooks/useSignalR';
+import { usePresence } from '../hooks/usePresence';
 import { formatDate } from '../utils/formatDate';
 import { getRoomsForGame, createRoom, type RoomSummary } from '../services/gameService';
 import type { RoomListItem } from '../components/game/RoomList';
@@ -30,8 +33,10 @@ function Game() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
-  const { totalPlayersOnline, details, selectedGame, isDetailsLoading, selectGame } = useGame();
+  const { details, selectedGame, isDetailsLoading, selectGame } = useGame();
+  const { totalOnline, gameOnline } = usePresence(gameId);
   const [availableRooms, setAvailableRooms] = useState<RoomSummary[]>([]);
+  const [roomsError, setRoomsError] = useState<string | null>(null);
   const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomId, setNewRoomId] = useState('');
@@ -40,34 +45,33 @@ function Game() {
   const selectedRoomId = activeRoomId;
 
   useEffect(() => {
-    if (gameId) {
-      selectGame(gameId);
-    }
+    if (gameId) { selectGame(gameId); }
   }, [gameId, selectGame]);
 
-  // Load rooms from the API
   const loadRooms = useCallback(async () => {
     if (!gameId) return;
+
+    setRoomsError(null);
 
     try {
       const rooms = await getRoomsForGame(gameId);
       setAvailableRooms(rooms);
     } catch (error) {
       console.error('Failed to load rooms:', error);
+      setRoomsError('Failed to load rooms.');
     }
   }, [gameId]);
 
   useEffect(() => {
-    void loadRooms();
+    const timer = window.setTimeout(() => void loadRooms(), 0);
+
+    return () => window.clearTimeout(timer);
   }, [loadRooms]);
 
-  // Listen for SignalR room changes to refresh the list in real-time
   useEffect(() => {
     if (!connection) return;
 
-    const handleRoomsChanged = () => {
-      void loadRooms();
-    };
+    const handleRoomsChanged = () => { void loadRooms(); };
 
     connection.on('RoomsChanged', handleRoomsChanged);
     connection.on('RoomDeleted', handleRoomsChanged);
@@ -96,39 +100,21 @@ function Game() {
   };
 
   const handleConfirmCreateRoom = async () => {
-    if (!details || !selectedGame || !gameId) {
-      return;
-    }
+    if (!details || !selectedGame || !gameId) { return; }
 
     const trimmedName = newRoomName.trim();
     const generatedRoomId = (newRoomId.trim() || slugifyRoomId(trimmedName)).trim();
 
-    if (!trimmedName || !generatedRoomId) {
-      return;
-    }
+    if (!trimmedName || !generatedRoomId) { return; }
 
     try {
       const room = await createRoom(gameId, trimmedName, generatedRoomId);
-
       handleCloseCreateRoom();
-
-      // Refresh rooms list
       await loadRooms();
 
-      if (gameId === 'tic-tac-toe') {
-        navigate(`/game/tic-tac-toe/room/${room.roomCode}`);
-        return;
-      }
-
-      if (gameId === 'trivia') {
-        navigate(`/game/trivia/room/${room.roomCode}`);
-        return;
-      }
-
-      if (gameId === 'memory') {
-        navigate(`/game/memory/room/${room.roomCode}`);
-        return;
-      }
+      if (gameId === 'tic-tac-toe') { navigate(`/game/tic-tac-toe/room/${room.roomCode}`); return; }
+      if (gameId === 'trivia') { navigate(`/game/trivia/room/${room.roomCode}`); return; }
+      if (gameId === 'memory') { navigate(`/game/memory/room/${room.roomCode}`); return; }
 
       setSearchParams({ room: room.id });
     } catch (error) {
@@ -137,21 +123,9 @@ function Game() {
   };
 
   const handleJoinRoom = (room: RoomListItem) => {
-    if (gameId === 'tic-tac-toe') {
-      navigate(`/game/tic-tac-toe/room/${room.id}`);
-      return;
-    }
-
-    if (gameId === 'trivia') {
-      navigate(`/game/trivia/room/${room.id}`);
-      return;
-    }
-
-    if (gameId === 'memory') {
-      navigate(`/game/memory/room/${room.id}`);
-      return;
-    }
-
+    if (gameId === 'tic-tac-toe') { navigate(`/game/tic-tac-toe/room/${room.id}`); return; }
+    if (gameId === 'trivia') { navigate(`/game/trivia/room/${room.id}`); return; }
+    if (gameId === 'memory') { navigate(`/game/memory/room/${room.id}`); return; }
     setSearchParams({ room: room.id });
   };
 
@@ -167,7 +141,7 @@ function Game() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(83,74,183,0.12),transparent_30%),#0f0f13] font-sans text-[#f5f7ff]">
       <div className={appShellClass}>
-        <Navbar onlineCount={totalPlayersOnline} />
+         <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
 
         <section className="min-h-[calc(100vh-126px)] px-6 pb-8 pt-7 max-sm:px-4">
           {isDetailsLoading || !details || !selectedGame ? (
@@ -177,83 +151,84 @@ function Game() {
             </div>
           ) : (
             <div className="grid min-h-full auto-rows-[minmax(320px,1fr)] gap-5 xl:grid-cols-2">
-              <section className={`${panelClass} grid h-full min-h-0 grid-rows-[auto_auto_1fr_auto] gap-[18px]`}>
-                <div className="grid gap-2.5 text-[#f5f7ff]/68">
-                  <div className="text-base uppercase tracking-[0.14em] text-white/52">Game Room</div>
-                  <h1 className="m-0 text-[2.2rem] leading-[1.05] font-bold tracking-[-0.04em] text-[#f5f7ff]">
-                    {details.gameName}
-                  </h1>
-                  <p className="m-0 text-[#f5f7ff]/68">{selectedGame.description}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <Badge variant="success">{details.roomStatus}</Badge>
-                  <Badge variant="primary">{status}</Badge>
-                  {activeRoom ? <Badge variant="primary">{activeRoom.id}</Badge> : null}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[18px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
-                    <span className="mb-2 block text-[1rem] uppercase tracking-[0.2em] text-[#d7ebff]/45">
-                      Players online
-                    </span>
-                    <strong className="text-[2rem] leading-none tracking-[-0.03em] text-[#f2fbff]">
-                      {selectedGame.playersOnline ?? 0}
-                    </strong>
+              <ErrorBoundary>
+                <section className={`${panelClass} grid h-full min-h-0 grid-rows-[auto_auto_1fr_auto] gap-[18px]`}>
+                  <div className="grid gap-2.5 text-[#f5f7ff]/68">
+                    <div className="text-base uppercase tracking-[0.14em] text-white/52">Game Room</div>
+                    <h1 className="m-0 text-[2.2rem] leading-[1.05] font-bold tracking-[-0.04em] text-[#f5f7ff]">
+                      {details.gameName}
+                    </h1>
+                    <p className="m-0 text-[#f5f7ff]/68">{selectedGame.description}</p>
                   </div>
-                  <div className="rounded-[18px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
-                    <span className="mb-2 block text-[1rem] uppercase tracking-[0.2em] text-[#d7ebff]/45">
-                      Last sync
-                    </span>
-                    <strong className="text-[1.5rem] leading-tight text-[#f2fbff]">
-                      {formatDate(details.updatedAt)}
-                    </strong>
-                  </div>
-                </div>
 
-                {activeRoom ? (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-[8px] border border-[rgba(42,42,58,0.72)] bg-[rgba(17,17,25,0.76)] p-3">
-                      <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-white/35">Creator</span>
-                      <strong>{activeRoom.creator}</strong>
-                    </div>
-                    <div className="rounded-[8px] border border-[rgba(42,42,58,0.72)] bg-[rgba(17,17,25,0.76)] p-3">
-                      <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-white/35">Players</span>
-                      <strong>
-                        {activeRoom.players}/{activeRoom.capacity}
+                  <div className="flex flex-wrap gap-3">
+                    <Badge variant="success">{details.roomStatus}</Badge>
+                    <Badge variant="primary">{status}</Badge>
+                    {activeRoom ? <Badge variant="primary">{activeRoom.id}</Badge> : null}
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[18px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
+                      <span className="mb-2 block text-[1rem] uppercase tracking-[0.2em] text-[#d7ebff]/45">Players online</span>
+                      <strong className="text-[2rem] leading-none tracking-[-0.03em] text-[#f2fbff]">
+                         {gameOnline}
                       </strong>
                     </div>
-                    <div className="rounded-[8px] border border-[rgba(42,42,58,0.72)] bg-[rgba(17,17,25,0.76)] p-3">
-                      <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-white/35">Room ID</span>
-                      <strong>{activeRoom.id}</strong>
+                    <div className="rounded-[18px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.02)] px-4 py-3.5">
+                      <span className="mb-2 block text-[1rem] uppercase tracking-[0.2em] text-[#d7ebff]/45">Last sync</span>
+                      <strong className="text-[1.5rem] leading-tight text-[#f2fbff]">
+                        {formatDate(details.updatedAt)}
+                      </strong>
                     </div>
                   </div>
-                ) : null}
 
-                <div className="mt-auto flex flex-wrap gap-3">
-                  <Button className="flex-1 basis-[180px]" onClick={handleOpenCreateRoom}>
-                    Create Room
-                  </Button>
-                  <Button
-                    className="flex-1 basis-[180px]"
-                    variant="surface"
-                    onClick={() => navigate('/home')}
-                  >
-                    Back to lobby
-                  </Button>
-                </div>
-              </section>
+                  {activeRoom ? (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-[8px] border border-[rgba(42,42,58,0.72)] bg-[rgba(17,17,25,0.76)] p-3">
+                        <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-white/35">Creator</span>
+                        <strong>{activeRoom.creator}</strong>
+                      </div>
+                      <div className="rounded-[8px] border border-[rgba(42,42,58,0.72)] bg-[rgba(17,17,25,0.76)] p-3">
+                        <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-white/35">Players</span>
+                        <strong>{activeRoom.players}/{activeRoom.capacity}</strong>
+                      </div>
+                      <div className="rounded-[8px] border border-[rgba(42,42,58,0.72)] bg-[rgba(17,17,25,0.76)] p-3">
+                        <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-white/35">Room ID</span>
+                        <strong>{activeRoom.id}</strong>
+                      </div>
+                    </div>
+                  ) : null}
 
-              <RoomList
-                rooms={availableRooms}
-                selectedRoomId={selectedRoomId}
-                onSelectRoom={(roomId) => setSearchParams({ room: roomId })}
-                onJoinRoom={handleJoinRoom}
-                onCreateRoom={handleOpenCreateRoom}
-              />
+                  <div className="mt-auto flex flex-wrap gap-3">
+                    <Button className="flex-1 basis-[180px]" onClick={handleOpenCreateRoom}>Create Room</Button>
+                    <Button className="flex-1 basis-[180px]" variant="surface" onClick={() => navigate('/home')}>
+                      Back to lobby
+                    </Button>
+                  </div>
+                </section>
+              </ErrorBoundary>
 
-              <Leaderboard gameName={details.gameName} entries={details.leaderboard} />
-              <StatsPanel stats={details.stats} />
+              <ErrorBoundary>
+                {roomsError ? (
+                  <ErrorFallback message={roomsError} onRetry={loadRooms} />
+                ) : (
+                  <RoomList
+                    rooms={availableRooms}
+                    selectedRoomId={selectedRoomId}
+                    onSelectRoom={(roomId) => setSearchParams({ room: roomId })}
+                    onJoinRoom={handleJoinRoom}
+                    onCreateRoom={handleOpenCreateRoom}
+                  />
+                )}
+              </ErrorBoundary>
+
+              <ErrorBoundary>
+                <Leaderboard gameName={details.gameName} entries={details.leaderboard} />
+              </ErrorBoundary>
+
+              <ErrorBoundary>
+                <StatsPanel stats={details.stats} />
+              </ErrorBoundary>
             </div>
           )}
         </section>
@@ -268,10 +243,7 @@ function Game() {
         previewRoomId={newRoomId || slugifyRoomId(newRoomName) || 'pending-room-id'}
         onRoomNameChange={(value) => {
           setNewRoomName(value);
-
-          if (!newRoomId.trim()) {
-            setNewRoomId(slugifyRoomId(value));
-          }
+          if (!newRoomId.trim()) { setNewRoomId(slugifyRoomId(value)); }
         }}
         onRoomIdChange={setNewRoomId}
         onClose={handleCloseCreateRoom}

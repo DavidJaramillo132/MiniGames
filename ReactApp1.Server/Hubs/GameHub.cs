@@ -54,6 +54,15 @@ namespace ReactApp1.Server.Hubs
                 ?? Context.User?.Identity?.Name
                 ?? "Jugador";
 
+            // Extract userId from JWT claims
+            Guid? joiningUserId = null;
+            var joiningUserIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (!string.IsNullOrEmpty(joiningUserIdClaim) && Guid.TryParse(joiningUserIdClaim, out var joiningParsedId))
+            {
+                joiningUserId = joiningParsedId;
+            }
+
             lock (SalasLock)
             {
                 if (!salas.TryGetValue(salaId, out var sala))
@@ -73,11 +82,13 @@ namespace ReactApp1.Server.Hubs
                     {
                         sala.Players[0] = connectionId;
                         sala.PlayerNames[0] = nombreJugador;
+                        sala.PlayerUserIds[0] = joiningUserId;
                     }
                     else if (sala.Players[1] is null)
                     {
                         sala.Players[1] = connectionId;
                         sala.PlayerNames[1] = nombreJugador;
+                        sala.PlayerUserIds[1] = joiningUserId;
                     }
                     else
                     {
@@ -90,6 +101,7 @@ namespace ReactApp1.Server.Hubs
                 if (indiceJugador >= 0)
                 {
                     sala.PlayerNames[indiceJugador] = nombreJugador;
+                    sala.PlayerUserIds[indiceJugador] = joiningUserId;
                 }
 
                 ConexionSala[connectionId] = salaId;
@@ -111,16 +123,16 @@ namespace ReactApp1.Server.Hubs
 
                 if (room is not null)
                 {
-                    // Extract userId from JWT claims if authenticated
-                    Guid? userId = null;
-                    var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                    if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedId))
+                    // Store the game slug so we can update stats when the game ends
+                    lock (SalasLock)
                     {
-                        userId = parsedId;
+                        if (salas.TryGetValue(salaId, out var s))
+                        {
+                            s.GameSlug = room.GameSlug;
+                        }
                     }
 
-                    await _roomService.AddPlayerAsync(room.Id, userId, connectionId);
+                    await _roomService.AddPlayerAsync(room.Id, joiningUserId, connectionId);
 
                     if (iniciarJuego)
                     {
@@ -269,13 +281,40 @@ namespace ReactApp1.Server.Hubs
                 ganador = sala.Winner;
             }
 
-            // Persist match result to database
+            // Persist match result and update leaderboard stats
             if (matchId.HasValue)
             {
+                Guid? winnerUserId = null;
+                Guid? loserUserId = null;
+                string? gameSlug = null;
+                bool isDraw = ganador is null;
+
+                lock (SalasLock)
+                {
+                    if (salas.TryGetValue(salaId, out var sala))
+                    {
+                        gameSlug = sala.GameSlug;
+
+                        if (ganador is not null)
+                        {
+                            // ganador is "X" or "O" — map to player index
+                            int winnerIndex = ganador == "X" ? 0 : 1;
+                            int loserIndex = ganador == "X" ? 1 : 0;
+                            winnerUserId = sala.PlayerUserIds[winnerIndex];
+                            loserUserId = sala.PlayerUserIds[loserIndex];
+                        }
+                        else
+                        {
+                            // Draw — both players passed as winner/loser for stats tracking
+                            winnerUserId = sala.PlayerUserIds[0];
+                            loserUserId = sala.PlayerUserIds[1];
+                        }
+                    }
+                }
+
                 try
                 {
-                    // Determine winner/loser user IDs from the room's connection-to-player mapping
-                    await _matchService.EndMatchAsync(matchId.Value, null, ganador is null ? "{\"draw\":true}" : $"{{\"winner\":\"{ganador}\"}}");
+                    await _matchService.EndMatchAsync(matchId.Value, winnerUserId, ganador is null ? "{\"draw\":true}" : $"{{\"winner\":\"{ganador}\"}}");
 
                     // Update the room status
                     var room = await _roomService.GetRoomByCodeAsync(salaId);
@@ -283,6 +322,12 @@ namespace ReactApp1.Server.Hubs
                     if (room is not null)
                     {
                         await _roomService.UpdateStatusAsync(room.Id, "finished");
+                    }
+
+                    // Update leaderboard stats
+                    if (!string.IsNullOrEmpty(gameSlug))
+                    {
+                        await _leaderboardService.UpdateStatsAfterMatchAsync(gameSlug, winnerUserId, loserUserId, isDraw);
                     }
                 }
                 catch (Exception ex)
@@ -477,6 +522,8 @@ namespace ReactApp1.Server.Hubs
         {
             public string?[] Players { get; } = new string?[2];
             public string?[] PlayerNames { get; } = new string?[2];
+            public Guid?[] PlayerUserIds { get; } = new Guid?[2];
+            public string? GameSlug { get; set; }
             public string[] Board { get; } = new string[9];
             public string CurrentTurn { get; set; } = "X";
             public bool IsStarted { get; set; }
