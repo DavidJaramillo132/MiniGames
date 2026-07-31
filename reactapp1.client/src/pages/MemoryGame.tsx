@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -35,6 +35,8 @@ function createDeck(): MemoryCard[] {
 function MemoryGame() {
   const navigate = useNavigate();
   const { roomId } = useParams<{ roomId: string }>();
+  const [searchParams] = useSearchParams();
+  const roomName = searchParams.get('name') ?? roomId;
   const { totalOnline, gameOnline } = usePresence('memory');
   const [cards, setCards] = useState<MemoryCard[]>(() => createDeck());
   const [flipped, setFlipped] = useState<number[]>([]);
@@ -114,7 +116,7 @@ function MemoryGame() {
                     Memory / Parejas
                   </span>
                   <h1 className="font-['Rajdhani'] text-[clamp(2.3rem,4.5vw,3.8rem)] leading-none font-bold uppercase tracking-[0.06em] text-[#f6fbff]">
-                    Sala {roomId}
+                    Sala {roomName}
                   </h1>
                 </div>
                 <div className="flex gap-2">

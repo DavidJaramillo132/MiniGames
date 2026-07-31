@@ -3,26 +3,18 @@ import Input from '../ui/Input';
 
 interface CreateRoomModalProps {
   gameName?: string;
-  creatorName: string;
   isOpen: boolean;
   roomName: string;
-  roomId: string;
-  previewRoomId: string;
   onRoomNameChange: (value: string) => void;
-  onRoomIdChange: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
 }
 
 function CreateRoomModal({
   gameName,
-  creatorName,
   isOpen,
   roomName,
-  roomId,
-  previewRoomId,
   onRoomNameChange,
-  onRoomIdChange,
   onClose,
   onConfirm,
 }: CreateRoomModalProps) {
@@ -39,17 +31,13 @@ function CreateRoomModal({
             <h2 className="mt-2 text-[2rem] leading-none font-bold tracking-[-0.04em] text-[#f5f7ff]">
               Nueva sala para {gameName}
             </h2>
-            <p className="mt-3 max-w-[460px] text-sm text-[#d7ebff]/62">
-              En el backend, `GameHub` usa `salaId` como identificador real de la sala. Si no
-              existe, se crea automaticamente al unirse.
-            </p>
           </div>
           <Button variant="ghost" onClick={onClose}>
             Close
           </Button>
         </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+       
+        <div className="mt-6">
           <Input
             label="Room name"
             placeholder="Fleet Hunters"
@@ -57,28 +45,6 @@ function CreateRoomModal({
             onChange={onRoomNameChange}
             helpText="This is the visible name shown in Available Rooms."
           />
-          <Input
-            label="Room ID (salaId)"
-            placeholder="fleet-hunters"
-            value={roomId}
-            onChange={onRoomIdChange}
-            helpText="This value is the room key used by SignalR in GameHub."
-          />
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[22px] border border-[rgba(141,232,255,0.1)] bg-[rgba(255,255,255,0.02)] p-4">
-            <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-[#d7ebff]/35">Creator</span>
-            <strong>{creatorName}</strong>
-          </div>
-          <div className="rounded-[22px] border border-[rgba(141,232,255,0.1)] bg-[rgba(255,255,255,0.02)] p-4">
-            <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-[#d7ebff]/35">Capacity</span>
-            <strong>2 players</strong>
-          </div>
-          <div className="rounded-[22px] border border-[rgba(141,232,255,0.1)] bg-[rgba(255,255,255,0.02)] p-4">
-            <span className="mb-1 block text-xs uppercase tracking-[0.14em] text-[#d7ebff]/35">Preview ID</span>
-            <strong>{previewRoomId}</strong>
-          </div>
         </div>
 
         <div className="mt-6 flex flex-wrap justify-end gap-3">

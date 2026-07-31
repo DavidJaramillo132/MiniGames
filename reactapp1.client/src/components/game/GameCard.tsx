@@ -10,7 +10,7 @@ interface GameCardProps {
 
 const iconByGameId: Record<string, ReactNode> = {
   'tic-tac-toe': (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.9">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.9">
       <path d="M8 7L16 17" />
       <path d="M16 7L8 17" />
       <circle cx="12" cy="12" r="9" />
@@ -18,7 +18,7 @@ const iconByGameId: Record<string, ReactNode> = {
   ),
 
   trivia: (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M9.5 9a2.5 2.5 0 1 1 4.4 1.6c-.7.8-1.9 1.5-1.9 2.9" />
       <path d="M12 17h.01" />
       <path d="M12 2v2" />
@@ -32,7 +32,7 @@ const iconByGameId: Record<string, ReactNode> = {
     </svg>
   ),
   memory: (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8">
       <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
       <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
       <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
@@ -48,7 +48,7 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
   return (
     <button
       type="button"
-      className="group relative overflow-hidden rounded-[28px] border p-6 text-left text-[#edf6ff] transition duration-200 enabled:hover:-translate-y-1 disabled:cursor-not-allowed"
+      className="group relative overflow-hidden rounded-[20px] border p-4 text-left text-[#edf6ff] transition duration-200 enabled:hover:-translate-y-1 disabled:cursor-not-allowed"
       style={{
         borderColor: isSelected ? game.accentColor : 'rgba(141,232,255,0.14)',
         backgroundImage:
@@ -70,9 +70,9 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
         style={{ background: `linear-gradient(90deg, transparent, ${game.accentColor}, transparent)` }}
       />
 
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div
-          className="inline-flex h-[60px] w-[60px] items-center justify-center rounded-[20px] border"
+          className="inline-flex h-[48px] w-[48px] items-center justify-center rounded-[14px] border"
           style={{
             color: game.accentColor,
             backgroundColor: accentBackground,
@@ -88,12 +88,12 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
       </div>
 
       <div
-        className="absolute right-5 top-16 h-24 w-24 rounded-full opacity-40 blur-3xl transition duration-200 group-hover:opacity-60"
+        className="absolute right-4 top-12 h-20 w-20 rounded-full opacity-40 blur-3xl transition duration-200 group-hover:opacity-60"
         style={{ backgroundColor: `${game.accentColor}44` }}
       />
 
-      <h2 className="relative z-10 m-0 text-[2.1rem] font-bold tracking-[-0.05em]">{game.name}</h2>
-      <p className="relative z-10 mb-6 mt-2 max-w-[28rem] text-[0.98rem] leading-7 text-[#d6e8f8]/62">
+      <h2 className="relative z-10 m-0 text-[1.5rem] font-bold tracking-[-0.05em]">{game.name}</h2>
+      <p className="relative z-10 mb-3 mt-1 max-w-[24rem] text-[0.88rem] leading-6 text-[#d6e8f8]/62">
         {game.description}
       </p>
 

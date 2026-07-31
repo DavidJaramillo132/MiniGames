@@ -44,9 +44,9 @@ function Navbar({ onlineCount, gameOnlineCount }: NavbarProps) {
         </div>
       </div>
 
-      <div className="inline-flex items-center gap-3 rounded-full border border-[rgba(134,240,190,0.24)] bg-[rgba(134,240,190,0.08)] px-4 py-2 text-[1rem] text-[#d9fef1]">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#86f0be] shadow-[0_0_0_4px_rgba(134,240,190,0.12)]" />
-        <span>{onlineCount} players online</span>
+      <div className="inline-flex items-center gap-3 rounded-full border border-[rgba(134,240,190,0.28)] bg-[rgba(134,240,190,0.10)] px-4 py-2 text-[1rem] text-[#d9fef1] shadow-[0_0_24px_rgba(134,240,190,0.06)]">
+        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#86f0be] shadow-[0_0_0_4px_rgba(134,240,190,0.2),0_0_16px_rgba(134,240,190,0.15)]" />
+        <span className="font-medium">{onlineCount} players online</span>
         {gameOnlineCount !== undefined ? (
           <span className="border-l border-[#86f0be]/25 pl-3 text-sm text-[#c6ffee]/70">
             {gameOnlineCount} in this game
