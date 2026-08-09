@@ -78,11 +78,14 @@ CREATE INDEX IF NOT EXISTS idx_matches_room ON matches(room_id);
 CREATE TABLE IF NOT EXISTS moves (
 	id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
 	match_id uuid NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-	turn_number int NOT NULL,
-	player_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
-	cell_index int NOT NULL,
-	symbol char(1) NOT NULL,
-	created_at timestamptz NOT NULL DEFAULT now()
+	turn_number int NOT NULL CHECK (turn_number > 0),
+	player_user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+	idempotency_key uuid NOT NULL,
+	cell_index int NOT NULL CHECK (cell_index BETWEEN 0 AND 8),
+	symbol char(1) NOT NULL CHECK (symbol IN ('X', 'O')),
+	created_at timestamptz NOT NULL DEFAULT now(),
+	CONSTRAINT moves_match_turn_number_unique UNIQUE (match_id, turn_number),
+	CONSTRAINT moves_match_player_idempotency_key_unique UNIQUE (match_id, player_user_id, idempotency_key)
 );
 
 CREATE INDEX IF NOT EXISTS idx_moves_match ON moves(match_id);

@@ -18,7 +18,7 @@ function TrophyIcon() {
   );
 }
 
-function Leaderboard({ gameName, entries }: LeaderboardProps) {
+function Leaderboard({ entries }: LeaderboardProps) {
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
       <div className="mb-3 flex items-center justify-between gap-3">

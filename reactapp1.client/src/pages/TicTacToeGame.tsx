@@ -29,6 +29,12 @@ interface PlayerAssignmentDto {
   playerName: string;
 }
 
+interface MoveSubmissionDto {
+  accepted: boolean;
+  replayed: boolean;
+  message?: string | null;
+}
+
 const emptyBoard: BoardCell[] = Array.from({ length: 9 }, () => '');
 
 function TicTacToeGame() {
@@ -39,6 +45,7 @@ function TicTacToeGame() {
   const { selectGame } = useGame();
   const { totalOnline, gameOnline } = usePresence('tic-tac-toe');
   const connectionRef = useRef<HubConnection | null>(null);
+  const pendingMoveKeys = useRef(new Map<number, string>());
   const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [board, setBoard] = useState<BoardCell[]>(emptyBoard);
   const [currentTurn, setCurrentTurn] = useState<PlayerSymbol>('X');
@@ -202,11 +209,25 @@ function TicTacToeGame() {
       return;
     }
 
+    const idempotencyKey = pendingMoveKeys.current.get(index) ?? crypto.randomUUID();
+    pendingMoveKeys.current.set(index, idempotencyKey);
+
     try {
-      await connection.invoke('HacerJugada', roomId, index);
+      const result = await connection.invoke<MoveSubmissionDto>('HacerJugada', roomId, index, idempotencyKey);
+
+      if (!result.accepted) {
+        pendingMoveKeys.current.delete(index);
+        setStatusMessage(result.message ?? 'La jugada no fue aceptada.');
+        return;
+      }
+
+      pendingMoveKeys.current.delete(index);
+      if (result.replayed) {
+        setStatusMessage(result.message ?? 'La jugada ya estaba registrada.');
+      }
     } catch (error) {
       console.error(error);
-      setStatusMessage('No se pudo enviar la jugada.');
+      setStatusMessage('No se pudo confirmar la jugada. Reinténtala para reconciliar el estado.');
     }
   };
 

@@ -22,7 +22,7 @@
     <PackageReference Include="Npgsql" Version="10.0.2" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(BuildProjectReferences)' != 'false'">
     <ProjectReference Include="..\reactapp1.client\reactapp1.client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

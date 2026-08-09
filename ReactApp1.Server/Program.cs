@@ -1,6 +1,7 @@
 using System.Text;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using ReactApp1.Server.Data;
 using ReactApp1.Server.Services;
@@ -92,6 +93,8 @@ builder.Services.AddSingleton<PresenceTracker>();
 
 var app = builder.Build();
 
+var forceHttps = builder.Configuration.GetValue<bool>("ForceHttps");
+
 // ── Seed database ────────────────────────────────────────────────────────────
 
 using (var scope = app.Services.CreateScope())
@@ -113,6 +116,11 @@ using (var scope = app.Services.CreateScope())
 
 // ── Middleware pipeline ──────────────────────────────────────────────────────
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 app.UseDefaultFiles();
 app.MapStaticAssets();
 
@@ -122,7 +130,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("ClientPolicy");
-app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment() || forceHttps)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -132,7 +144,7 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 // SignalR hub
-app.MapHub<ReactApp1.Server.Hubs.GameHub>("/gameHub");
-app.MapHub<ReactApp1.Server.Hubs.PresenceHub>("/presenceHub");
+app.MapHub<ReactApp1.Server.Hubs.GameHub>("/gameHub").RequireAuthorization();
+app.MapHub<ReactApp1.Server.Hubs.PresenceHub>("/presenceHub").RequireAuthorization();
 
 app.Run();

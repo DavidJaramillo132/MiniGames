@@ -366,3 +366,8 @@ FodyWeavers.xsd
 .env
 .env.*
 !.env.example
+
+
+# Opencode
+.atl/
+.atl    

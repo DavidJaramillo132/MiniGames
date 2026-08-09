@@ -1,0 +1,25 @@
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.example
+**/appsettings.Development.json
+
+# Local dependencies and build output
+**/node_modules/
+**/dist/
+**/bin/
+**/obj/
+
+# Source control and IDE files
+.git/
+.github/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+
+# Local tooling and logs
+.codegraph/
+.atl/
+*.log

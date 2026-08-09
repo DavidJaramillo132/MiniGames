@@ -37,6 +37,8 @@ namespace ReactApp1.Server.Hubs
         
         public async Task UnirseASala(string salaId)
         {
+            var joiningUserId = GetAuthenticatedUserId();
+
             if (string.IsNullOrWhiteSpace(salaId))
             {
                 throw new HubException("La sala es obligatoria.");
@@ -53,15 +55,6 @@ namespace ReactApp1.Server.Hubs
                 Context.User?.FindFirst("username")?.Value
                 ?? Context.User?.Identity?.Name
                 ?? "Jugador";
-
-            // Extract userId from JWT claims
-            Guid? joiningUserId = null;
-            var joiningUserIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            if (!string.IsNullOrEmpty(joiningUserIdClaim) && Guid.TryParse(joiningUserIdClaim, out var joiningParsedId))
-            {
-                joiningUserId = joiningParsedId;
-            }
 
             lock (SalasLock)
             {
@@ -172,60 +165,181 @@ namespace ReactApp1.Server.Hubs
             }
         }
 
-        public async Task HacerJugada(string salaId, int posicion)
+        public async Task<MoveSubmissionDto> HacerJugada(string salaId, int posicion, Guid idempotencyKey)
         {
+            var playerUserId = GetAuthenticatedUserId();
+
             if (posicion < 0 || posicion > 8)
             {
-                await Clients.Caller.SendAsync("MovimientoInvalido", "Posición fuera del tablero.");
-                return;
+                return MoveSubmissionDto.Rejected("Posición fuera del tablero.");
+            }
+
+            if (idempotencyKey == Guid.Empty)
+            {
+                return MoveSubmissionDto.Rejected("La clave de idempotencia es obligatoria.");
+            }
+
+            if (string.IsNullOrWhiteSpace(salaId))
+            {
+                return MoveSubmissionDto.Rejected("La sala es obligatoria.");
             }
 
             salaId = salaId.Trim();
             var connectionId = Context.ConnectionId;
-            bool movimientoAplicado = false;
-            string simbolo = string.Empty;
-            string? ganador;
-            bool empate;
-            int turnNumber = 0;
-            Guid? matchId = null;
+            Guid matchId;
 
             lock (SalasLock)
             {
                 if (!salas.TryGetValue(salaId, out var sala))
                 {
-                    throw new HubException("Sala no encontrada.");
+                    return MoveSubmissionDto.Rejected("Sala no encontrada.");
                 }
 
                 var indiceJugador = Array.IndexOf(sala.Players, connectionId);
                 if (indiceJugador == -1)
                 {
-                    throw new HubException("No perteneces a esta sala.");
+                    return MoveSubmissionDto.Rejected("No perteneces a esta sala.");
+                }
+
+                if (sala.PlayerUserIds[indiceJugador] != playerUserId)
+                {
+                    return MoveSubmissionDto.Rejected("La identidad de la conexión no coincide con el jugador de la sala.");
+                }
+
+                if (!sala.MatchId.HasValue)
+                {
+                    return MoveSubmissionDto.Rejected("La partida todavía no está lista.");
+                }
+
+                matchId = sala.MatchId.Value;
+            }
+
+            MoveSubmissionStatus? idempotencyStatus;
+            try
+            {
+                idempotencyStatus = await _matchService.GetIdempotencyStatusAsync(
+                    matchId,
+                    playerUserId,
+                    idempotencyKey,
+                    posicion);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to resolve idempotency key for match {MatchId}", matchId);
+                return MoveSubmissionDto.Rejected("No se pudo guardar la jugada. Inténtalo de nuevo.");
+            }
+
+            if (idempotencyStatus == MoveSubmissionStatus.Replay)
+            {
+                return MoveSubmissionDto.Replay("La jugada ya estaba registrada.");
+            }
+
+            if (idempotencyStatus == MoveSubmissionStatus.IdempotencyKeyReuse)
+            {
+                return MoveSubmissionDto.Rejected("La clave de idempotencia ya se usó para otra jugada.");
+            }
+
+            PendingMove pendingMove;
+            lock (SalasLock)
+            {
+                if (!salas.TryGetValue(salaId, out var sala))
+                {
+                    return MoveSubmissionDto.Rejected("Sala no encontrada.");
+                }
+
+                var indiceJugador = Array.IndexOf(sala.Players, connectionId);
+                if (indiceJugador == -1)
+                {
+                    return MoveSubmissionDto.Rejected("No perteneces a esta sala.");
+                }
+
+                if (sala.PlayerUserIds[indiceJugador] != playerUserId)
+                {
+                    return MoveSubmissionDto.Rejected("La identidad de la conexión no coincide con el jugador de la sala.");
                 }
 
                 if (!sala.IsStarted || sala.IsFinished)
                 {
-                    _ = Clients.Caller.SendAsync("MovimientoInvalido", "La partida no está activa.");
-                    return;
+                    return MoveSubmissionDto.Rejected("La partida no está activa.");
                 }
 
-                simbolo = indiceJugador == 0 ? "X" : "O";
+                var simbolo = indiceJugador == 0 ? "X" : "O";
 
                 if (sala.CurrentTurn != simbolo)
                 {
-                    _ = Clients.Caller.SendAsync("MovimientoInvalido", "No es tu turno.");
-                    return;
+                    return MoveSubmissionDto.Rejected("No es tu turno.");
                 }
 
                 if (!string.IsNullOrEmpty(sala.Board[posicion]))
                 {
-                    _ = Clients.Caller.SendAsync("MovimientoInvalido", "Esa casilla ya está ocupada.");
-                    return;
+                    return MoveSubmissionDto.Rejected("Esa casilla ya está ocupada.");
                 }
 
-                sala.Board[posicion] = simbolo;
+                if (!sala.MatchId.HasValue)
+                {
+                    return MoveSubmissionDto.Rejected("La partida todavía no está lista.");
+                }
+
+                pendingMove = new PendingMove(
+                    sala.MatchId.Value,
+                    playerUserId,
+                    idempotencyKey,
+                    sala.TurnCount + 1,
+                    posicion,
+                    simbolo,
+                    indiceJugador);
+            }
+
+            MoveSubmissionResult persistenceResult;
+            try
+            {
+                persistenceResult = await _matchService.SubmitMoveAsync(
+                    pendingMove.MatchId,
+                    pendingMove.PlayerUserId,
+                    pendingMove.IdempotencyKey,
+                    pendingMove.TurnNumber,
+                    pendingMove.Position,
+                    pendingMove.Symbol);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist move for match {MatchId}", pendingMove.MatchId);
+                return MoveSubmissionDto.Rejected("No se pudo guardar la jugada. Inténtalo de nuevo.");
+            }
+
+            if (!persistenceResult.IsAccepted)
+            {
+                var message = persistenceResult.Status == MoveSubmissionStatus.IdempotencyKeyReuse
+                    ? "La clave de idempotencia ya se usó para otra jugada."
+                    : "El turno ya fue registrado. Se actualizó el estado de la sala.";
+                await EnviarEstadoSala(salaId);
+                return MoveSubmissionDto.Rejected(message);
+            }
+
+            string? ganador;
+            bool empate;
+            bool movimientoAplicado = false;
+            lock (SalasLock)
+            {
+                if (!salas.TryGetValue(salaId, out var sala))
+                {
+                    return MoveSubmissionDto.Rejected("Sala no encontrada.");
+                }
+
+                // The database commit succeeds before this authoritative state changes.
+                if (sala.MatchId != pendingMove.MatchId ||
+                    sala.TurnCount != pendingMove.TurnNumber - 1 ||
+                    !string.IsNullOrEmpty(sala.Board[pendingMove.Position]) ||
+                    sala.CurrentTurn != pendingMove.Symbol ||
+                    sala.PlayerUserIds[pendingMove.PlayerIndex] != pendingMove.PlayerUserId)
+                {
+                    return persistenceResult.Status == MoveSubmissionStatus.Replay
+                        ? MoveSubmissionDto.Replay("La jugada ya había sido aplicada.")
+                        : MoveSubmissionDto.Rejected("El estado de la partida cambió antes de aplicar la jugada.");
+                }
+
+                sala.Board[pendingMove.Position] = pendingMove.Symbol;
                 sala.TurnCount++;
-                turnNumber = sala.TurnCount;
-                matchId = sala.MatchId;
                 movimientoAplicado = true;
 
                 ganador = ObtenerGanador(sala.Board);
@@ -238,51 +352,20 @@ namespace ReactApp1.Server.Hubs
                 }
                 else
                 {
-                    sala.CurrentTurn = simbolo == "X" ? "O" : "X";
+                    sala.CurrentTurn = pendingMove.Symbol == "X" ? "O" : "X";
                 }
             }
 
             if (!movimientoAplicado)
             {
-                return;
+                return MoveSubmissionDto.Rejected("No se pudo aplicar la jugada.");
             }
 
-            // Persist move to database
-            if (matchId.HasValue)
-            {
-                try
-                {
-                    Guid? userId = null;
-                    var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                    if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedId))
-                    {
-                        userId = parsedId;
-                    }
-
-                    await _matchService.RecordMoveAsync(matchId.Value, userId, turnNumber, posicion, simbolo);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to persist move for match {MatchId}", matchId);
-                }
-            }
-
-            await Clients.Group(salaId).SendAsync("JugadaRealizada", connectionId, posicion, simbolo);
+            await Clients.Group(salaId).SendAsync("JugadaRealizada", connectionId, pendingMove.Position, pendingMove.Symbol);
             await EnviarEstadoSala(salaId);
 
-            lock (SalasLock)
-            {
-                if (!salas.TryGetValue(salaId, out var sala) || !sala.IsFinished)
-                {
-                    return;
-                }
-
-                ganador = sala.Winner;
-            }
-
             // Persist match result and update leaderboard stats
-            if (matchId.HasValue)
+            if (ganador is not null || empate)
             {
                 Guid? winnerUserId = null;
                 Guid? loserUserId = null;
@@ -314,7 +397,7 @@ namespace ReactApp1.Server.Hubs
 
                 try
                 {
-                    await _matchService.EndMatchAsync(matchId.Value, winnerUserId, ganador is null ? "{\"draw\":true}" : $"{{\"winner\":\"{ganador}\"}}");
+                    await _matchService.EndMatchAsync(pendingMove.MatchId, winnerUserId, ganador is null ? "{\"draw\":true}" : $"{{\"winner\":\"{ganador}\"}}");
 
                     // Update the room status
                     var room = await _roomService.GetRoomByCodeAsync(salaId);
@@ -332,15 +415,23 @@ namespace ReactApp1.Server.Hubs
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to persist match result for match {MatchId}", matchId);
+                    _logger.LogWarning(ex, "Failed to persist match result for match {MatchId}", pendingMove.MatchId);
                 }
             }
 
-            await Clients.Group(salaId).SendAsync("JuegoFinalizado", ganador);
+            if (ganador is not null || empate)
+            {
+                await Clients.Group(salaId).SendAsync("JuegoFinalizado", ganador);
+            }
+
+            return persistenceResult.Status == MoveSubmissionStatus.Replay
+                ? MoveSubmissionDto.Replay("La jugada ya estaba registrada.")
+                : MoveSubmissionDto.Success();
         }
 
         public async Task ReiniciarPartida(string salaId)
         {
+            var playerUserId = GetAuthenticatedUserId();
             salaId = salaId.Trim();
             var connectionId = Context.ConnectionId;
             Guid? newMatchId = null;
@@ -355,6 +446,12 @@ namespace ReactApp1.Server.Hubs
                 if (Array.IndexOf(sala.Players, connectionId) == -1)
                 {
                     throw new HubException("No perteneces a esta sala.");
+                }
+
+                var playerIndex = Array.IndexOf(sala.Players, connectionId);
+                if (sala.PlayerUserIds[playerIndex] != playerUserId)
+                {
+                    throw new HubException("La identidad de la conexión no coincide con el jugador de la sala.");
                 }
 
                 if (sala.PlayersConnected < 2)
@@ -518,6 +615,24 @@ namespace ReactApp1.Server.Hubs
             return null;
         }
 
+        private Guid GetAuthenticatedUserId()
+        {
+            if (Context.User?.Identity?.IsAuthenticated != true)
+            {
+                throw new HubException("Se requiere una sesión autenticada.");
+            }
+
+            var userIdClaim = Context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? Context.User.FindFirst("sub")?.Value;
+
+            if (!Guid.TryParse(userIdClaim, out var userId))
+            {
+                throw new HubException("La sesión no contiene un identificador de usuario válido.");
+            }
+
+            return userId;
+        }
+
         private sealed class RoomState
         {
             public string?[] Players { get; } = new string?[2];
@@ -559,5 +674,21 @@ namespace ReactApp1.Server.Hubs
         private sealed record PlayerAssignmentDto(
             string Symbol,
             string PlayerName);
+
+        private sealed record PendingMove(
+            Guid MatchId,
+            Guid PlayerUserId,
+            Guid IdempotencyKey,
+            int TurnNumber,
+            int Position,
+            string Symbol,
+            int PlayerIndex);
+
+        public sealed record MoveSubmissionDto(bool Accepted, bool Replayed, string? Message)
+        {
+            public static MoveSubmissionDto Success() => new(true, false, null);
+            public static MoveSubmissionDto Replay(string message) => new(true, true, message);
+            public static MoveSubmissionDto Rejected(string message) => new(false, false, message);
+        }
     }
 }

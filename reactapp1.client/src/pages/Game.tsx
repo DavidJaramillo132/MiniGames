@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -10,11 +10,9 @@ import CreateRoomModal from '../components/game/CreateRoomModal';
 import Leaderboard from '../components/game/Leaderboard';
 import RoomList from '../components/game/RoomList';
 import StatsPanel from '../components/game/StatsPanel';
-import { useAuth } from '../hooks/useAuth';
 import { useGame } from '../hooks/useGame';
 import { useSignalR } from '../hooks/useSignalR';
 import { usePresence } from '../hooks/usePresence';
-import { formatDate } from '../utils/formatDate';
 import { getRoomsForGame, createRoom, type RoomSummary } from '../services/gameService';
 import type { RoomListItem } from '../components/game/RoomList';
 
@@ -22,7 +20,6 @@ function Game() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { gameId } = useParams<{ gameId: string }>();
-  const { user } = useAuth();
   const { details, selectedGame, isDetailsLoading, isFindingMatch, selectGame, findMatch } = useGame();
   const { totalOnline, gameOnline } = usePresence(gameId);
   const [availableRooms, setAvailableRooms] = useState<RoomSummary[]>([]);
@@ -69,11 +66,6 @@ function Game() {
       connection.off('RoomDeleted', handleRoomsChanged);
     };
   }, [connection, loadRooms]);
-
-  const activeRoom = useMemo(
-    () => availableRooms.find((room) => room.id === activeRoomId) ?? null,
-    [activeRoomId, availableRooms],
-  );
 
   const handleOpenCreateRoom = () => {
     setNewRoomName('');
@@ -211,7 +203,6 @@ function Game() {
 
       <CreateRoomModal
         gameName={details?.gameName}
-        creatorName={user?.name ?? 'Host player'}
         isOpen={isCreateRoomOpen}
         roomName={newRoomName}
         onRoomNameChange={setNewRoomName}
