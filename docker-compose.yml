@@ -10,13 +10,32 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      ForceHttps: "false"
+      ForceHttps: "true"
+      TrustForwardedHeaders: "true"
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: ${JWT_ISSUER}
       Jwt__Audience: ${JWT_AUDIENCE}
       Jwt__ExpiresInMinutes: ${JWT_EXPIRES_IN_MINUTES}
+    expose:
+      - "8080"
+    networks:
+      - default
+      - proxy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      - app
     ports:
-      - "80:8080"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
     restart: unless-stopped
 
   db:
@@ -38,3 +57,11 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  proxy:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

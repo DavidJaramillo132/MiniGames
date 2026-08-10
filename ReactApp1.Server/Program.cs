@@ -96,6 +96,7 @@ builder.Services.AddSingleton<PresenceTracker>();
 var app = builder.Build();
 
 var forceHttps = builder.Configuration.GetValue<bool>("ForceHttps");
+var trustForwardedHeaders = builder.Configuration.GetValue<bool>("TrustForwardedHeaders");
 
 // ── Seed database ────────────────────────────────────────────────────────────
 
@@ -118,10 +119,19 @@ using (var scope = app.Services.CreateScope())
 
 // ── Middleware pipeline ──────────────────────────────────────────────────────
 
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+};
+
+if (trustForwardedHeaders)
+{
+    // The Compose proxy network is the only non-loopback source allowed to set these headers.
+    forwardedHeadersOptions.KnownIPNetworks.Clear();
+    forwardedHeadersOptions.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("172.30.0.0/24"));
+}
+
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseDefaultFiles();
 app.MapStaticAssets();

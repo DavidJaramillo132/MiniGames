@@ -1,12 +1,13 @@
-# Deploy PlayHub to an Azure Linux VM
+# Deploy PlayHub with HTTPS on an Azure Linux VM
 
-This deployment serves PlayHub over HTTP at the VM public IP. Without a domain, TLS certificates and HTTPS are not configured. Do not use this deployment for credentials or data that require encrypted transit.
+PlayHub is served only through Caddy at `https://playhubb.site`. Caddy obtains and renews the Let's Encrypt certificate automatically after DNS points the domain at the VM.
 
 ## Quick Path
 
-1. Create a Linux Azure VM with a public IP and allow inbound TCP ports `22` (SSH) and `80` (HTTP) in its network security group.
-2. Install Docker Engine and the Docker Compose plugin on the VM using Docker's Linux installation instructions for the VM distribution.
-3. Clone this repository, create `.env` from `.env.example`, replace every placeholder with strong values, then start the stack.
+1. In GoDaddy DNS, create or update the `A` record for `@` to `158.23.163.230`. Do not create a `www` record for this deployment.
+2. In the Azure network security group and the VM host firewall, allow inbound TCP ports `22` (SSH, limited to administrator IPs where possible), `80` (HTTP), and `443` (HTTPS).
+3. Wait for the public DNS record for `playhubb.site` to resolve to `158.23.163.230` before starting Caddy. Let's Encrypt validation requires public access on ports `80` and `443`.
+4. Install Docker Engine and the Docker Compose plugin, then clone the repository and configure the root `.env` without committing it.
 
 ```bash
 git clone <repository-url> playhub
@@ -16,24 +17,33 @@ nano .env
 docker compose up -d --build
 ```
 
-Open `http://<VM-PUBLIC-IP>/` after both services are running.
+Open `https://playhubb.site/` after the stack is running. The direct VM IP no longer serves the application after this cutover.
 
 ## Prerequisites
 
 | Area | Required configuration |
 |---|---|
-| Azure VM | Linux VM with a public IP and SSH access |
-| Network security group | Inbound TCP `22` limited to administrator IPs where possible; inbound TCP `80` for HTTP traffic |
+| Azure VM | Linux VM with public IP `158.23.163.230` and SSH access |
+| DNS | GoDaddy `A` record `@` points to `158.23.163.230` before Caddy starts |
+| Azure network security group | Inbound TCP `22`, `80`, and `443`; limit `22` to administrator IPs where possible |
+| VM host firewall | Inbound TCP `22`, `80`, and `443`; limit `22` to administrator IPs where possible |
 | Docker | Docker Engine and Docker Compose plugin installed on the VM |
 | Configuration | A local root `.env` created from `.env.example`; never commit it |
 
-The Compose file publishes host port `80` to the application container's port `8080`. PostgreSQL is internal to the Docker network and is not exposed on the VM.
+Only Caddy publishes host ports `80` and `443`. The application listens internally on port `8080`; PostgreSQL is not exposed on the VM.
+
+## Proxy Trust Boundary
+
+Compose enables `TrustForwardedHeaders` only for this Caddy deployment. It trusts `X-Forwarded-For` and `X-Forwarded-Proto` only from the private `172.30.0.0/24` Docker proxy network, which lets the application recognize Caddy's HTTPS termination without accepting those headers from direct clients.
+
+Do not publish application host ports or enable `TrustForwardedHeaders` for direct or local deployments. If the application is reachable outside the Docker proxy network, a client could spoof forwarded headers and bypass the intended trust boundary.
 
 ## Check Status
 
 ```bash
 docker compose ps
 docker compose logs --tail=100 app
+docker compose logs --tail=100 caddy
 docker compose logs --tail=100 db
 ```
 
@@ -59,11 +69,19 @@ This adds only `game_actions`, `quiz_questions`, and catalog metadata. Rollback 
 
 ## Update
 
+Run this exact command from the repository directory on the VM:
+
 ```bash
-git pull
-docker compose up -d --build
-docker image prune -f
+git pull --ff-only && docker compose up -d --build && docker image prune -f
 ```
+
+## Verify HTTPS
+
+```bash
+curl -I https://playhubb.site/
+```
+
+Confirm the response is successful and the browser shows a valid certificate for `playhubb.site`. If issuance fails, first confirm that public DNS has propagated and Azure allows ports `80` and `443`.
 
 ## Back Up PostgreSQL
 
@@ -75,3 +93,7 @@ docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > "
 ```
 
 The command reads the configured database name and user from the database container, so it does not expose them in the shell command.
+
+## Back Up Caddy Certificates
+
+The named `caddy_data` volume stores Let's Encrypt account and certificate data; `caddy_config` stores Caddy runtime configuration. Back up both Compose-created named volumes and store the backups off the VM along with the PostgreSQL backup. Preserve both volumes when recreating containers so Caddy can reuse its certificates and avoid unnecessary certificate issuance.
