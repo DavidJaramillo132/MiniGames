@@ -27,7 +27,7 @@ public sealed class DatabaseSeeder
         var games = new[]
         {
             new { Slug = "tic-tac-toe", Name = "Tic-Tac-Toe", IsEnabled = true, MaxPlayers = 2 },
-            new { Slug = "trivia", Name = "Trivia Quiz", IsEnabled = true, MaxPlayers = 8 },
+            new { Slug = "trivia", Name = "Trivia Quiz", IsEnabled = true, MaxPlayers = 2 },
             new { Slug = "memory", Name = "Memory Parejas", IsEnabled = true, MaxPlayers = 2 },
         };
 
@@ -40,6 +40,8 @@ public sealed class DatabaseSeeder
                 _logger.LogInformation("Seeded game: {Slug}", game.Slug);
             }
         }
+
+        await connection.ExecuteAsync("UPDATE games SET max_players = 2 WHERE slug IN ('memory', 'trivia', 'tic-tac-toe');");
 
         _logger.LogInformation("Database seeding completed.");
     }

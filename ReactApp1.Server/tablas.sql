@@ -90,6 +90,75 @@ CREATE TABLE IF NOT EXISTS moves (
 
 CREATE INDEX IF NOT EXISTS idx_moves_match ON moves(match_id);
 
+-- Generic durable actions for games whose rules are not tic-tac-toe cells/symbols.
+CREATE TABLE IF NOT EXISTS game_actions (
+	id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+	match_id uuid NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+	sequence_number int NOT NULL CHECK (sequence_number > 0),
+	player_user_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+	idempotency_key uuid NOT NULL,
+	action_type text NOT NULL,
+	payload jsonb NOT NULL,
+	created_at timestamptz NOT NULL DEFAULT now(),
+	CONSTRAINT game_actions_match_sequence_unique UNIQUE (match_id, sequence_number),
+	CONSTRAINT game_actions_match_player_idempotency_key_unique UNIQUE (match_id, player_user_id, idempotency_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_actions_match ON game_actions(match_id);
+
+-- Answers remain server-side; state DTOs never include correct_option_index.
+CREATE TABLE IF NOT EXISTS quiz_questions (
+	id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+	category text NOT NULL,
+	question text NOT NULL UNIQUE,
+	options jsonb NOT NULL,
+	correct_option_index int NOT NULL CHECK (correct_option_index BETWEEN 0 AND 3),
+	created_at timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO quiz_questions (category, question, options, correct_option_index) VALUES
+('History','Which civilization built Machu Picchu?','["Maya","Inca","Roman","Egyptian"]',1),
+('History','In which year did the Berlin Wall fall?','["1987","1989","1991","1993"]',1),
+('History','Who was the first president of the United States?','["Thomas Jefferson","George Washington","John Adams","Abraham Lincoln"]',1),
+('History','The Rosetta Stone helped decode which writing system?','["Cuneiform","Hieroglyphs","Runes","Latin"]',1),
+('History','Which empire was ruled by Mansa Musa?','["Mali","Ottoman","Mughal","Byzantine"]',0),
+('History','The Renaissance began in which country?','["France","Italy","Spain","Germany"]',1),
+('History','Which ship carried Charles Darwin on his famous voyage?','["Endeavour","Beagle","Victory","Mayflower"]',1),
+('History','Who wrote the Declaration of Independence?','["Benjamin Franklin","Thomas Jefferson","James Madison","Alexander Hamilton"]',1),
+('History','What was the ancient Greek marketplace called?','["Forum","Agora","Acropolis","Pantheon"]',1),
+('History','The Cold War was mainly between the US and which country?','["China","Soviet Union","Japan","Germany"]',1),
+('Science','What is the chemical symbol for gold?','["Ag","Au","Gd","Go"]',1),
+('Science','Which planet is known for its prominent rings?','["Mars","Saturn","Venus","Neptune"]',1),
+('Science','What gas do plants absorb from the atmosphere?','["Oxygen","Nitrogen","Carbon dioxide","Helium"]',2),
+('Science','How many bones are in the typical adult human body?','["186","206","226","246"]',1),
+('Science','What is the largest organ in the human body?','["Liver","Skin","Heart","Lung"]',1),
+('Science','What force keeps planets in orbit?','["Magnetism","Gravity","Friction","Electricity"]',1),
+('Science','What is the pH of pure water at room temperature?','["5","6","7","8"]',2),
+('Science','Which particle has a negative electric charge?','["Proton","Neutron","Electron","Photon"]',2),
+('Science','What is the hardest natural substance?','["Quartz","Diamond","Iron","Granite"]',1),
+('Science','DNA is primarily found in which part of a cell?','["Nucleus","Membrane","Ribosome","Vacuole"]',0),
+('Geography','What is the longest river in South America?','["Nile","Amazon","Parana","Orinoco"]',1),
+('Geography','Which country has the most natural lakes?','["Canada","Brazil","Russia","United States"]',0),
+('Geography','What is the capital of Australia?','["Sydney","Melbourne","Canberra","Perth"]',2),
+('Geography','Mount Kilimanjaro is in which country?','["Kenya","Tanzania","Ethiopia","Uganda"]',1),
+('Geography','Which ocean lies between Africa and Australia?','["Atlantic","Arctic","Indian","Pacific"]',2),
+('Geography','What is the smallest continent by land area?','["Europe","Antarctica","Australia","South America"]',2),
+('Geography','Which desert covers much of northern Africa?','["Gobi","Sahara","Kalahari","Atacama"]',1),
+('Geography','Which country is home to the city of Kyoto?','["China","South Korea","Japan","Thailand"]',2),
+('Geography','What is the capital of Canada?','["Toronto","Vancouver","Ottawa","Montreal"]',2),
+('Geography','The Strait of Gibraltar separates Spain from which country?','["Italy","Morocco","Greece","Turkey"]',1),
+('Entertainment','Which film features the line "May the Force be with you"?','["Star Wars","Star Trek","Dune","Alien"]',0),
+('Entertainment','Who created the character Sherlock Holmes?','["Agatha Christie","Arthur Conan Doyle","J. K. Rowling","Mark Twain"]',1),
+('Entertainment','Which instrument has 88 keys?','["Violin","Piano","Guitar","Flute"]',1),
+('Entertainment','What is the fictional African country in Black Panther?','["Genovia","Wakanda","Latveria","Narnia"]',1),
+('Entertainment','Which animated film features a clownfish named Marlin?','["Moana","Finding Nemo","Coco","Up"]',1),
+('Entertainment','Who painted The Starry Night?','["Claude Monet","Vincent van Gogh","Pablo Picasso","Salvador Dali"]',1),
+('Entertainment','Which series is set in the town of Hawkins?','["Dark","Stranger Things","Wednesday","Lost"]',1),
+('Entertainment','What is the name of the wizarding school in Harry Potter?','["Hogwarts","Narnia","Camelot","Xavier Institute"]',0),
+('Entertainment','Which band recorded "Bohemian Rhapsody"?','["The Beatles","Queen","ABBA","U2"]',1),
+('Entertainment','Which game franchise features the character Link?','["Final Fantasy","The Legend of Zelda","Pokemon","Minecraft"]',1)
+ON CONFLICT (question) DO NOTHING;
+
 -- Player stats / leaderboard
 CREATE TABLE IF NOT EXISTS player_stats (
 	id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),

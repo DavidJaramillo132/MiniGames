@@ -49,6 +49,14 @@ docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d 
 
 The migration is safe to rerun after success. It assigns random idempotency UUIDs to existing moves, but stops without changing constraints if old moves have no player, invalid tic-tac-toe data, or duplicate match turns. Those records cannot be attributed or deduplicated safely and must be resolved explicitly before retrying.
 
+Apply generic game support next, then load the `quiz_questions` seed block from `tablas.sql` once for an existing volume:
+
+```bash
+docker compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < ReactApp1.Server/migrations/20260809_add_generic_games.sql
+```
+
+This adds only `game_actions`, `quiz_questions`, and catalog metadata. Rollback is limited to dropping those new tables if no Memory or Trivia match history must be retained; never roll back the existing `moves` constraints as part of this feature.
+
 ## Update
 
 ```bash

@@ -86,6 +86,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IGameCatalogService, GameCatalogService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<IGameActionService, GameActionService>();
+builder.Services.AddScoped<ITriviaQuestionService, TriviaQuestionService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<PresenceTracker>();
 

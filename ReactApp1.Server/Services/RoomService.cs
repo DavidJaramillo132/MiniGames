@@ -49,10 +49,11 @@ public sealed class RoomService : IRoomService
 
         const string sql = @"
             INSERT INTO rooms (id, game_slug, name, room_code, status, capacity, current_players, creator_user_id, created_at, updated_at)
-            VALUES (@Id, @GameSlug, @Name, @RoomCode, 'waiting', 2, 0, @CreatorUserId, now(), now())
+            SELECT @Id, g.slug, @Name, @RoomCode, 'waiting', g.max_players, 0, @CreatorUserId, now(), now()
+            FROM games g WHERE g.slug = @GameSlug AND g.is_enabled = true AND g.max_players = 2
             RETURNING *;";
 
-        var room = await conn.QuerySingleAsync<Room>(sql, new
+        var room = await conn.QuerySingleOrDefaultAsync<Room>(sql, new
         {
             Id = Guid.NewGuid(),
             GameSlug = gameSlug,
@@ -61,6 +62,7 @@ public sealed class RoomService : IRoomService
             CreatorUserId = creatorUserId
         }, tx);
 
+        if (room is null) throw new InvalidOperationException("The requested game is unavailable or does not support two players.");
         await tx.CommitAsync();
         return room;
     }

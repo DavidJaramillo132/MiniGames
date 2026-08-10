@@ -106,3 +106,26 @@ If quieres, puedo generar:
 - EF Core model classes and a `DbContext` scaffold for these tables,
 - a sample `RoomsController` and minimal repository code to operate rooms,
 - or a step-by-step migration script using `dotnet ef`.
+
+## Memory and Trivia
+
+Memory is a two-player, server-owned 3x4 board. The server shuffles six pairs with Fisher-Yates, reveals only flipped or claimed values, keeps a turn after a pair, and hides mismatches after a short delay.
+
+Trivia is a two-player parallel quiz. The server chooses the same ten ordered questions from the seeded History, Science, Geography, and Entertainment bank. Correct answers stay server-only. Effective time is server elapsed time plus five seconds for each wrong answer.
+
+Both games use `JugarAccion(roomCode, actionType, payload, idempotencyKey)` with an authenticated SignalR identity. `game_actions` is separate from the constrained Tic-Tac-Toe `moves` table, so generic actions cannot bypass or weaken Tic-Tac-Toe validation.
+
+## Existing Database Migration
+
+Back up first, then apply the existing Tic-Tac-Toe migration followed by `20260809_add_generic_games.sql`. The fresh schema includes the 40-question bank; existing deployments must also load the `quiz_questions` seed block from `tablas.sql` once before hosting Trivia.
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ReactApp1.Server/migrations/20260809_add_durable_move_idempotency.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ReactApp1.Server/migrations/20260809_add_generic_games.sql
+```
+
+Rollback boundary: remove the new `game_actions` and `quiz_questions` tables only when no Memory or Trivia matches must be retained. Do not remove or alter `moves`; it remains Tic-Tac-Toe history.
+
+## Verification Limitation
+
+This repository has no server test project or configured test harness. The pure session engines are isolated in `Games/IGameSession.cs` for focused unit coverage when a test project is introduced; this change does not add a heavyweight test framework.

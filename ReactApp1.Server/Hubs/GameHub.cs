@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using ReactApp1.Server.Services;
@@ -5,29 +6,37 @@ using ReactApp1.Server.Services;
 namespace ReactApp1.Server.Hubs
 {
     [Authorize]
-    public class GameHub : Hub
+    public partial class GameHub : Hub
     {
         private readonly ILogger<GameHub> _logger;
         private readonly IRoomService _roomService;
         private readonly IMatchService _matchService;
         private readonly ILeaderboardService _leaderboardService;
+        private readonly IGameActionService _gameActionService;
+        private readonly ITriviaQuestionService _triviaQuestionService;
 
         // In-memory cache for fast game state during active play.
         // The database is the source of truth for rooms, players, and match results.
         private static Dictionary<string, RoomState> salas = new();
         private static Dictionary<string, string> ConexionSala = new();
         private static Lock SalasLock = new();
+        // Gates are retained for the process lifetime so disconnect cleanup cannot dispose one in use.
+        private static ConcurrentDictionary<string, SemaphoreSlim> RoomActionGates = new();
 
         public GameHub(
             ILogger<GameHub> logger,
             IRoomService roomService,
             IMatchService matchService,
-            ILeaderboardService leaderboardService)
+            ILeaderboardService leaderboardService,
+            IGameActionService gameActionService,
+            ITriviaQuestionService triviaQuestionService)
         {
             _logger = logger;
             _roomService = roomService;
             _matchService = matchService;
             _leaderboardService = leaderboardService;
+            _gameActionService = gameActionService;
+            _triviaQuestionService = triviaQuestionService;
         }
 
         public async Task UnirseSala(string salaId)
@@ -46,6 +55,10 @@ namespace ReactApp1.Server.Hubs
 
             salaId = salaId.Trim();
             var connectionId = Context.ConnectionId;
+            var roomRecord = await _roomService.GetRoomByCodeAsync(salaId)
+                ?? throw new HubException("La sala no existe.");
+            if (roomRecord.Capacity != 2)
+                throw new HubException("Esta sala no es compatible con el motor de dos jugadores.");
             bool iniciarJuego = false;
             string jugadorUnoId;
             int indiceJugador;
@@ -60,8 +73,13 @@ namespace ReactApp1.Server.Hubs
             {
                 if (!salas.TryGetValue(salaId, out var sala))
                 {
-                    sala = new RoomState();
+                    sala = new RoomState { GameSlug = roomRecord.GameSlug, Capacity = roomRecord.Capacity };
                     salas[salaId] = sala;
+                }
+                else
+                {
+                    sala.GameSlug = roomRecord.GameSlug;
+                    sala.Capacity = roomRecord.Capacity;
                 }
 
                 if (ConexionSala.TryGetValue(connectionId, out var salaActual) && salaActual != salaId)
@@ -83,7 +101,7 @@ namespace ReactApp1.Server.Hubs
                         sala.PlayerNames[1] = nombreJugador;
                         sala.PlayerUserIds[1] = joiningUserId;
                     }
-                    else
+                    else if (sala.PlayersConnected >= sala.Capacity)
                     {
                         throw new HubException("La sala está llena.");
                     }
@@ -112,36 +130,24 @@ namespace ReactApp1.Server.Hubs
             // Persist player join to database (fire-and-forget for speed)
             try
             {
-                var room = await _roomService.GetRoomByCodeAsync(salaId);
+                await _roomService.AddPlayerAsync(roomRecord.Id, joiningUserId, connectionId);
 
-                if (room is not null)
+                if (iniciarJuego)
                 {
-                    // Store the game slug so we can update stats when the game ends
+                    await _roomService.UpdateStatusAsync(roomRecord.Id, "in_game");
+
+                    // Start a match record in the database
+                    var match = await _matchService.StartMatchAsync(roomRecord.Id);
+
                     lock (SalasLock)
                     {
                         if (salas.TryGetValue(salaId, out var s))
                         {
-                            s.GameSlug = room.GameSlug;
+                            s.MatchId = match.Id;
                         }
                     }
 
-                    await _roomService.AddPlayerAsync(room.Id, joiningUserId, connectionId);
-
-                    if (iniciarJuego)
-                    {
-                        await _roomService.UpdateStatusAsync(room.Id, "in_game");
-
-                        // Start a match record in the database
-                        var match = await _matchService.StartMatchAsync(room.Id);
-
-                        lock (SalasLock)
-                        {
-                            if (salas.TryGetValue(salaId, out var s))
-                            {
-                                s.MatchId = match.Id;
-                            }
-                        }
-                    }
+                    await StartGenericSessionAsync(salaId, roomRecord.GameSlug);
                 }
             }
             catch (Exception ex)
@@ -526,6 +532,9 @@ namespace ReactApp1.Server.Hubs
                             sala.Winner = null;
                             Array.Fill(sala.Board, string.Empty);
                             sala.CurrentTurn = "X";
+                            sala.MatchId = null;
+                            sala.TurnCount = 0;
+                            sala.GameSession = null;
                         }
                     }
                 }
@@ -587,7 +596,9 @@ namespace ReactApp1.Server.Hubs
                     sala.IsStarted,
                     sala.IsFinished,
                     sala.Winner,
-                    sala.PlayersConnected);
+                    sala.PlayersConnected,
+                    sala.GameSlug,
+                    sala.GameSession?.GetClientState());
             }
 
             await Clients.Group(salaId).SendAsync("JugadoresEnSala", estado!.JugadoresConectados);
@@ -646,6 +657,8 @@ namespace ReactApp1.Server.Hubs
             public string? Winner { get; set; }
             public Guid? MatchId { get; set; }
             public int TurnCount { get; set; }
+            public int Capacity { get; set; } = 2;
+            public Games.IGameSession? GameSession { get; set; }
             public int PlayersConnected => Players.Count(x => !string.IsNullOrEmpty(x));
 
             public void ResetBoard()
@@ -656,6 +669,7 @@ namespace ReactApp1.Server.Hubs
                 Winner = null;
                 MatchId = null;
                 TurnCount = 0;
+                GameSession = null;
             }
         }
 
@@ -669,7 +683,9 @@ namespace ReactApp1.Server.Hubs
             bool IsStarted,
             bool IsFinished,
             string? Winner,
-            int JugadoresConectados);
+            int JugadoresConectados,
+            string? GameSlug = null,
+            object? GameState = null);
 
         private sealed record PlayerAssignmentDto(
             string Symbol,
