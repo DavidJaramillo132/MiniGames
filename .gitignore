@@ -370,4 +370,7 @@ FodyWeavers.xsd
 
 # Opencode
 .atl/
+
+# CodeGraph
+.codegraph/
 .atl    
