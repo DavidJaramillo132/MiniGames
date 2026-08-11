@@ -7,20 +7,23 @@ import {
   getCurrentUser,
 } from '../services/authService';
 import type { LoginCredentials, RegistrationFields } from '../types/auth.types';
+import { type TranslationKey } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/LanguageContext';
 
-function getFriendlyAuthError(error: unknown) {
+function getFriendlyAuthError(error: unknown): TranslationKey {
   if (error instanceof Error) {
     if (error.message.includes('Invalid email or password')) {
-      return 'Invalid email or password.';
+      return 'invalidCredentials';
     }
     if (error.message.includes('already') || error.message.includes('Conflict')) {
-      return 'An account with that information already exists.';
+      return 'accountExists';
     }
   }
-  return 'Authentication failed. Please try again.';
+  return 'authFailed';
 }
 
 export function useAuth() {
+  const { t } = useI18n();
   const {
     user,
     token,
@@ -40,10 +43,10 @@ export function useAuth() {
       setAuthSession(session);
       return session;
     } catch (error) {
-      setAuthError(getFriendlyAuthError(error));
+      setAuthError(t(getFriendlyAuthError(error)));
       throw error;
     }
-  }, [setAuthError, setAuthSession]);
+  }, [setAuthError, setAuthSession, t]);
 
   const register = useCallback(async (fields: RegistrationFields) => {
     try {
@@ -52,10 +55,10 @@ export function useAuth() {
       setAuthSession(session);
       return session;
     } catch (error) {
-      setAuthError(getFriendlyAuthError(error));
+      setAuthError(t(getFriendlyAuthError(error)));
       throw error;
     }
-  }, [setAuthError, setAuthSession]);
+  }, [setAuthError, setAuthSession, t]);
 
   const logout = useCallback(async () => {
     await logoutService();

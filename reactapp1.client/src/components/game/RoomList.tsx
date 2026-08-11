@@ -1,5 +1,6 @@
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
+import { useI18n } from '../../i18n/LanguageContext';
 
 export interface RoomListItem {
   id: string;
@@ -24,12 +25,13 @@ function RoomList({
   onJoinRoom,
   onCreateRoom,
 }: RoomListProps) {
+  const { t } = useI18n();
   const selectedRoom = rooms.find((room) => room.id === selectedRoomId) ?? null;
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
       <div className="mb-3 inline-flex items-center justify-between gap-3 text-[1.35rem] font-bold tracking-[-0.04em]">
-        <span>Salas disponibles</span>
+        <span>{t('availableRooms')}</span>
         <span className="inline-flex h-[30px] min-w-[30px] items-center justify-center rounded-full border border-[rgba(120,230,255,0.22)] bg-[rgba(120,230,255,0.08)] px-2 text-[0.8rem] font-bold text-[#a8efff]">
           {rooms.length}
         </span>
@@ -39,8 +41,8 @@ function RoomList({
         <div className="grid min-h-0 content-start gap-2 overflow-auto pr-1">
           {rooms.length === 0 ? (
             <EmptyState
-              title="No rooms available yet."
-              action={{ label: 'Create the first room', onClick: onCreateRoom }}
+              title={t('noRooms')}
+              action={{ label: t('createFirstRoom'), onClick: onCreateRoom }}
             />
           ) : (
             rooms.map((room) => (
@@ -66,8 +68,8 @@ function RoomList({
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-x-[14px] gap-y-1 text-[0.85rem] text-[#d7ebff]/58">
-                  <span>Creator: {room.creator}</span>
-                  <span>{room.players} players inside</span>
+                  <span>{t('creator', { name: room.creator })}</span>
+                  <span>{t('playersInside', { count: room.players })}</span>
                 </div>
               </button>
             ))
@@ -83,7 +85,7 @@ function RoomList({
               if (selectedRoom) { onJoinRoom(selectedRoom); }
             }}
           >
-            Join Room
+            {t('joinRoom')}
           </Button>
         </div>
       </div>

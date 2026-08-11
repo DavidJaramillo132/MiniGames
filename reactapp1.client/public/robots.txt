@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /app
+Disallow: /home
+Disallow: /game/
+
+Sitemap: https://playhubb.site/sitemap.xml

@@ -6,33 +6,35 @@ import LandingNav from '../components/layout/LandingNav';
 import Spinner from '../components/ui/Spinner';
 import { getGames } from '../services/gameService';
 import type { Game } from '../types/game.types';
+import { type TranslationKey } from '../i18n/LanguageProvider';
+import { useI18n } from '../i18n/LanguageContext';
 
 const presentationStats = [
-  { value: '2,400+', label: 'Jugadores registrados' },
-  { value: '18,000+', label: 'Partidas jugadas' },
-  { value: '142', label: 'En linea ahora' },
-  { value: '3', label: 'Arenas activas' },
+  { value: '2,400+', label: 'registeredPlayers' },
+  { value: '18,000+', label: 'matchesPlayed' },
+  { value: '142', label: 'onlineNow' },
+  { value: '3', label: 'activeArenas' },
 ];
 
 const featurePillars = [
   {
-    title: 'Partidas rapidas',
-    copy: 'Entra al lobby, elige modo y empieza a competir en segundos.',
+    title: 'quickMatches',
+    copy: 'quickMatchesCopy',
   },
   {
-    title: 'Rivales reales',
-    copy: 'Salas, matchmaking y enfrentamientos con otros jugadores en vivo.',
+    title: 'realRivals',
+    copy: 'realRivalsCopy',
   },
   {
-    title: 'Progreso visible',
-    copy: 'Rankings, historial y estadisticas que convierten cada partida en avance.',
+    title: 'visibleProgress',
+    copy: 'visibleProgressCopy',
   },
 ];
 
 const competitiveLoop = [
-  'Elige un minijuego con identidad propia',
-  'Compite en vivo contra otros jugadores',
-  'Sube tu ELO y mejora tu perfil',
+  'chooseMinigame',
+  'competeLive',
+  'improveElo',
 ];
 
 function PlayIcon() {
@@ -56,18 +58,18 @@ function GridIcon() {
 
 function getGameLabel(gameId: string) {
   if (gameId === 'tic-tac-toe') {
-    return 'Duelo 1v1';
+    return 'duel';
   }
 
   if (gameId === 'trivia') {
-    return 'Ritmo rapido';
+    return 'fastPace';
   }
 
   if (gameId === 'memory') {
-    return 'Parejas 1v1';
+    return 'pairs';
   }
 
-  return 'Tiempo real';
+  return 'realtime';
 }
 
 function renderGameIcon(game: Game) {
@@ -107,6 +109,7 @@ function renderGameIcon(game: Game) {
 }
 
 function Presentation() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,30 +141,28 @@ function Presentation() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-transparent text-[#edf6ff]">
       <div className="relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(120,230,255,0.16),transparent_22%),radial-gradient(circle_at_80%_15%,rgba(255,123,99,0.14),transparent_18%),radial-gradient(circle_at_50%_55%,rgba(77,163,255,0.1),transparent_28%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(120,230,255,0.16),transparent_22%),radial-gradient(circle_at_80%_15%,rgba(255,123,99,0.14),transparent_18%),radial-gradient(circle_at_50%_55%,rgba(77,163,255,0.1),transparent_28%)]" />
 
         <LandingNav />
 
         <section className="relative mx-auto grid w-full max-w-[1280px] gap-8 px-6 pb-10 pt-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-center max-sm:px-4">
           <div className="grid gap-7">
-            <Badge variant="primary">Multiplayer minigames in real time</Badge>
+            <Badge variant="primary">{t('realtimeMinigames')}</Badge>
 
             <div className="grid max-w-[760px] gap-5">
               <h1 className="font-['Rajdhani'] text-[clamp(4.2rem,10vw,8rem)] font-bold uppercase leading-[0.88] tracking-[0.04em] text-[#f6fbff]">
-                Play loud.
-                <span className="block text-[#78e6ff]">Climb harder.</span>
+                {t('playLoud')}
+                <span className="block text-[#78e6ff]">{t('climbHarder')}</span>
               </h1>
               <p className="max-w-[640px] text-[clamp(1.08rem,2vw,1.3rem)] leading-8 text-[#d6e8f8]/72">
-                PlayHub convierte minijuegos competitivos en una experiencia con identidad:
-                salas en vivo, rivales reales, estadisticas claras y una interfaz que empuja a
-                jugar otra vez.
+                {t('presentationDescription')}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-4">
               <Button onClick={() => navigate('/register')}>
                 <PlayIcon />
-                Entrar a competir
+                {t('compete')}
               </Button>
               <Button
                 variant="surface"
@@ -170,7 +171,7 @@ function Presentation() {
                 }
               >
                 <GridIcon />
-                Ver arenas
+                {t('viewArenas')}
               </Button>
             </div>
 
@@ -180,27 +181,27 @@ function Presentation() {
                   key={pillar.title}
                   className="rounded-[26px] border border-[rgba(141,232,255,0.14)] bg-[rgba(6,16,30,0.62)] p-5 backdrop-blur-md"
                 >
-                  <h2 className="text-[1.08rem] font-semibold text-[#f6fbff]">{pillar.title}</h2>
-                  <p className="mt-2 text-sm leading-6 text-[#d6e8f8]/62">{pillar.copy}</p>
+                  <h2 className="text-[1.08rem] font-semibold text-[#f6fbff]">{t(pillar.title as TranslationKey)}</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#d6e8f8]/62">{t(pillar.copy as TranslationKey)}</p>
                 </article>
               ))}
             </div>
           </div>
 
           <aside className="relative">
-            <div className="absolute inset-8 rounded-full bg-[rgba(120,230,255,0.12)] blur-3xl" />
+            <div className="pointer-events-none absolute inset-8 rounded-full bg-[rgba(120,230,255,0.12)] blur-3xl" />
             <div className="relative overflow-hidden rounded-[34px] border border-[rgba(141,232,255,0.18)] bg-[linear-gradient(180deg,rgba(8,18,34,0.9),rgba(4,10,20,0.96))] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.28)]">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[0.8rem] uppercase tracking-[0.24em] text-[#97dafc]/62">
-                    Live pulse
+                    {t('livePulse')}
                   </p>
                   <h2 className="mt-2 text-[1.9rem] font-bold tracking-[-0.04em]">
-                    Arena preview
+                    {t('arenaPreview')}
                   </h2>
                 </div>
                 <span className="rounded-full border border-[rgba(134,240,190,0.26)] bg-[rgba(134,240,190,0.08)] px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-[#86f0be]">
-                  142 online
+                  142 {t('online')}
                 </span>
               </div>
 
@@ -213,17 +214,17 @@ function Presentation() {
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(120,230,255,0.12)] text-sm font-bold text-[#90ebff]">
                       0{index + 1}
                     </span>
-                    <span className="text-[#ebf6ff]">{step}</span>
+                    <span className="text-[#ebf6ff]">{t(step as TranslationKey)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="mt-6 grid gap-3 rounded-[26px] border border-[rgba(255,123,99,0.14)] bg-[linear-gradient(135deg,rgba(255,123,99,0.1),rgba(255,199,106,0.08))] p-5">
                 <p className="text-[0.8rem] uppercase tracking-[0.24em] text-[#ffd8b1]/68">
-                  Seasonal focus
+                  {t('seasonalFocus')}
                 </p>
                 <p className="text-[1.4rem] font-semibold leading-tight text-[#fff7ef]">
-                  Gana una posicion en el top semanal y desbloquea insignias visibles.
+                  {t('seasonalCopy')}
                 </p>
               </div>
             </div>
@@ -238,7 +239,7 @@ function Presentation() {
                   {stat.value}
                 </strong>
                 <p className="mt-2 text-sm uppercase tracking-[0.18em] text-[#d6e8f8]/48">
-                  {stat.label}
+                  {t(stat.label as TranslationKey)}
                 </p>
               </article>
             ))}
@@ -252,22 +253,21 @@ function Presentation() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/68">
-                Game selection
+                {t('gameSelection')}
               </p>
               <h2 className="mt-2 font-['Rajdhani'] text-[3rem] font-bold uppercase tracking-[0.06em] text-[#f6fbff]">
-                Choose your arena
+                {t('chooseArena')}
               </h2>
             </div>
             <p className="max-w-[520px] text-[#d6e8f8]/62">
-              Cada juego tiene ritmo, color y tension propia. El objetivo no es solo jugar, sino
-              volver porque tu perfil, tu ranking y tus resultados importan.
+              {t('gamesDescription')}
             </p>
           </div>
 
           {isLoading ? (
             <div className="flex min-h-[220px] items-center justify-center gap-3 rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[rgba(5,13,24,0.78)] text-[#d6e8f8]/68">
               <Spinner size={28} />
-              <span>Cargando minijuegos...</span>
+              <span>{t('loadingGames')}</span>
             </div>
           ) : (
             <div className="grid gap-5 lg:grid-cols-3">
@@ -277,7 +277,7 @@ function Presentation() {
                   className="relative overflow-hidden rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-6"
                 >
                   <div
-                    className="absolute right-4 top-4 h-24 w-24 rounded-full blur-3xl"
+                    className="pointer-events-none absolute right-4 top-4 h-24 w-24 rounded-full blur-3xl"
                     style={{ backgroundColor: `${game.accentColor}40` }}
                   />
 
@@ -295,7 +295,7 @@ function Presentation() {
                   <div className="relative mt-6 flex items-center justify-between gap-3">
                     <h3 className="text-[1.7rem] font-bold tracking-[-0.04em]">{game.name}</h3>
                     <span className="text-[0.75rem] uppercase tracking-[0.24em] text-[#d6e8f8]/48">
-                      {getGameLabel(game.id)}
+                      {t(getGameLabel(game.id) as TranslationKey)}
                     </span>
                   </div>
 
@@ -305,14 +305,14 @@ function Presentation() {
 
                   <div className="relative mt-6 flex flex-wrap items-center gap-3">
                     {game.isAvailable ? (
-                      <Badge variant="success">{game.playersOnline} jugando</Badge>
+                      <Badge variant="success">{t('playing', { count: game.playersOnline ?? 0 })}</Badge>
                     ) : (
                       <Badge variant="warning" isStatic>
                         {game.statusLabel}
                       </Badge>
                     )}
                     <span className="text-sm uppercase tracking-[0.18em] text-[#d6e8f8]/40">
-                      {game.isAvailable ? 'Ready now' : 'Coming next'}
+                      {game.isAvailable ? t('readyNow') : t('comingNext')}
                     </span>
                   </div>
                 </article>

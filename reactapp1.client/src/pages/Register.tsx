@@ -4,6 +4,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useAuth } from '../hooks/useAuth';
 import type { RegistrationFields } from '../types/auth.types';
+import { useI18n } from '../i18n/LanguageContext';
 
 const strengthLevels = [
   { label: 'Weak', className: 'bg-[#ff7b63]' },
@@ -47,6 +48,7 @@ function calculateStrength(password: string) {
 }
 
 function Register() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { error, register } = useAuth();
   const [fields, setFields] = useState<RegistrationFields>({
@@ -81,7 +83,7 @@ function Register() {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 text-[#edf6ff]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(120,230,255,0.14),transparent_20%),radial-gradient(circle_at_84%_18%,rgba(255,123,99,0.12),transparent_18%),radial-gradient(circle_at_55%_76%,rgba(255,199,106,0.08),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(120,230,255,0.14),transparent_20%),radial-gradient(circle_at_84%_18%,rgba(255,123,99,0.12),transparent_18%),radial-gradient(circle_at_55%_76%,rgba(255,199,106,0.08),transparent_24%)]" />
 
       <section className="relative grid w-full max-w-[1180px] overflow-hidden rounded-[36px] border border-[rgba(141,232,255,0.16)] bg-[linear-gradient(180deg,rgba(8,18,34,0.94),rgba(4,10,20,0.98))] shadow-[0_28px_90px_rgba(0,0,0,0.3)] lg:grid-cols-[1fr_1fr]">
         <aside className="hidden border-r border-[rgba(141,232,255,0.12)] bg-[linear-gradient(135deg,rgba(120,230,255,0.08),rgba(255,199,106,0.08))] p-9 lg:grid">
@@ -96,19 +98,18 @@ function Register() {
                     PlayHub
                   </div>
                   <div className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">
-                    New challenger
+                    {t('newChallenger')}
                   </div>
                 </div>
               </div>
 
               <div className="grid gap-4">
                 <h1 className="font-['Rajdhani'] text-[4.5rem] font-bold uppercase leading-[0.88] tracking-[0.05em] text-[#f6fbff]">
-                  Build your
-                  <span className="block text-[#ffc76a]">player tag.</span>
+                  {t('buildTag')}
+                  <span className="block text-[#ffc76a]">{t('playerTag')}</span>
                 </h1>
                 <p className="max-w-[420px] text-[1rem] leading-8 text-[#d6e8f8]/68">
-                  Crea tu perfil, entra al lobby y empieza a construir historial, rachas y
-                  posicion en cada arena competitiva.
+                  {t('registerDescription')}
                 </p>
               </div>
             </div>
@@ -116,10 +117,10 @@ function Register() {
             <div className="grid gap-4">
               <article className="rounded-[24px] border border-[rgba(255,199,106,0.16)] bg-[rgba(255,199,106,0.07)] p-5">
                 <p className="text-[0.78rem] uppercase tracking-[0.22em] text-[#ffd8a2]/62">
-                  Why join
+                  {t('whyJoin')}
                 </p>
                 <p className="mt-3 text-[1.7rem] font-semibold leading-tight text-[#fff7eb]">
-                  Salas privadas, stats visibles y progreso que se siente en cada partida.
+                  {t('registerPromo')}
                 </p>
               </article>
             </div>
@@ -138,7 +139,7 @@ function Register() {
                     PlayHub
                   </div>
                   <div className="text-[0.76rem] uppercase tracking-[0.24em] text-[#97dafc]/68">
-                    New challenger
+                    {t('newChallenger')}
                   </div>
                 </div>
               </div>
@@ -146,13 +147,13 @@ function Register() {
 
             <div className="grid gap-3">
               <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">
-                Register
+                {t('register')}
               </p>
               <h2 className="text-[2.4rem] font-bold tracking-[-0.05em] text-[#f7fbff]">
-                Create your account
+                {t('createYourAccount')}
               </h2>
               <p className="text-[#d6e8f8]/66">
-                Crea tu perfil competitivo y entra al ecosistema de partidas, rankings y stats.
+                {t('registerPrompt')}
               </p>
             </div>
 
@@ -164,15 +165,15 @@ function Register() {
               ) : null}
 
               <Input
-                label="Username"
+                label={t('username')}
                 type="text"
-                placeholder="Choose a username"
+                placeholder={t('chooseUsername')}
                 value={fields.username}
                 onChange={(value) => setFields((current) => ({ ...current, username: value }))}
               />
 
               <Input
-                label="Email"
+                label={t('email')}
                 type="email"
                 placeholder="you@example.com"
                 value={fields.email}
@@ -181,12 +182,12 @@ function Register() {
 
               <div className="grid gap-2">
                 <Input
-                  label="Password"
+                  label={t('password')}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Create a password"
+                  placeholder={t('createPassword')}
                   value={fields.password}
                   onChange={(value) => setFields((current) => ({ ...current, password: value }))}
-                  actionLabel={showPassword ? 'Hide' : 'Show'}
+                  actionLabel={showPassword ? t('hide') : t('show')}
                   onActionClick={() => setShowPassword((current) => !current)}
                 />
                 <div className="grid gap-2">
@@ -201,25 +202,25 @@ function Register() {
                     ))}
                   </div>
                   <span className="text-[0.86rem] text-[#d4ecff]/62">
-                    Password strength:{' '}
-                    {fields.password ? strengthCopy.label : 'Start typing to measure'}
+                    {t('passwordStrength')} {' '}
+                    {fields.password ? t(strengthCopy.label.toLowerCase() as 'weak' | 'fair' | 'good' | 'strong') : t('startTyping')}
                   </span>
                 </div>
               </div>
 
               <Input
-                label="Confirm password"
+                label={t('confirmPassword')}
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Repeat your password"
+                placeholder={t('repeatPassword')}
                 value={fields.confirmPassword}
                 onChange={(value) =>
                   setFields((current) => ({ ...current, confirmPassword: value }))
                 }
-                actionLabel={showConfirmPassword ? 'Hide' : 'Show'}
+                actionLabel={showConfirmPassword ? t('hide') : t('show')}
                 onActionClick={() => setShowConfirmPassword((current) => !current)}
                 helpText={
                   fields.confirmPassword && fields.password !== fields.confirmPassword
-                    ? 'Las contrasenas no coinciden.'
+                     ? t('passwordsMismatch')
                     : undefined
                 }
               />
@@ -232,12 +233,12 @@ function Register() {
                 onClick={handleCreateAccount}
                 disabled={Boolean(fields.confirmPassword && fields.password !== fields.confirmPassword)}
               >
-                {isLoading ? 'Creating account...' : 'Create challenger profile'}
+                {isLoading ? t('creatingAccount') : t('createProfile')}
               </Button>
 
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
                 <Button variant="ghost" onClick={() => navigate('/login')}>
-                  Already have an account?
+                  {t('alreadyAccount')}
                 </Button>
               </div>
             </div>

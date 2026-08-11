@@ -20,7 +20,7 @@ function Button({
   ...props
 }: ButtonProps) {
   const baseClassName =
-    'inline-flex min-h-12 items-center justify-center gap-2.5 rounded-[18px] border px-5 py-3 text-sm font-semibold tracking-[0.01em] transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78e6ff]/50 disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-65';
+    'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border px-5 py-3 text-sm font-semibold tracking-[0.01em] transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78e6ff]/50 disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-65';
 
   const variantClassName = {
     primary:

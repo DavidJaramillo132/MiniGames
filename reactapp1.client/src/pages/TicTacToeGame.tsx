@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import { useGame } from '../hooks/useGame';
 import { useAuthStore } from '../store/authStore';
 import { usePresence } from '../hooks/usePresence';
+import { useI18n } from '../i18n/LanguageContext';
 
 type BoardCell = string;
 type PlayerSymbol = 'X' | 'O';
@@ -38,6 +39,7 @@ interface MoveSubmissionDto {
 const emptyBoard: BoardCell[] = Array.from({ length: 9 }, () => '');
 
 function TicTacToeGame() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { roomId, gameId } = useParams<{ roomId: string; gameId?: string }>();
   const [searchParams] = useSearchParams();
@@ -57,7 +59,7 @@ function TicTacToeGame() {
   const [isFinished, setIsFinished] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [playersConnected, setPlayersConnected] = useState(0);
-  const [statusMessage, setStatusMessage] = useState('Conectando a la sala...');
+  const [statusMessage, setStatusMessage] = useState('');
 
   useEffect(() => {
     selectGame('tic-tac-toe');
@@ -107,12 +109,12 @@ function TicTacToeGame() {
         setStatusMessage(
           state.winner
             ? `Partida finalizada. Gana ${state.winner === 'X' ? resolvedPlayerXName : resolvedPlayerOName}.`
-            : 'Partida finalizada en empate.',
+            : t('gameFinishedDraw'),
         );
       } else if (state.isStarted) {
         setStatusMessage(`Turno de ${resolvedCurrentTurnPlayerName}.`);
       } else {
-        setStatusMessage('Esperando al segundo jugador.');
+        setStatusMessage(t('waitingSecond'));
       }
     };
 
@@ -125,15 +127,15 @@ function TicTacToeGame() {
     };
 
     const handleGameStarted = () => {
-      setStatusMessage('La partida ha comenzado.');
+      setStatusMessage(t('gameStarted'));
     };
 
     const handleGameRestarted = () => {
-      setStatusMessage('La partida se reinicio.');
+      setStatusMessage(t('gameRestarted'));
     };
 
     const handlePlayerDisconnected = () => {
-      setStatusMessage('Un jugador salio de la sala.');
+      setStatusMessage(t('playerLeft'));
       setPlayersConnected((current) => Math.max(0, current - 1));
     };
 
@@ -146,7 +148,7 @@ function TicTacToeGame() {
 
     void (async () => {
       try {
-        setStatusMessage(`Entrando a la sala ${roomId}...`);
+        setStatusMessage(t('enteringRoom', { roomId }));
         await connection.start();
 
         if (isDisposed) {
@@ -162,7 +164,7 @@ function TicTacToeGame() {
 
         console.error(error);
         setConnectionState('disconnected');
-        setStatusMessage('No se pudo conectar con la sala.');
+        setStatusMessage(t('roomConnectFailed'));
       }
     })();
 
@@ -180,19 +182,19 @@ function TicTacToeGame() {
         void connection.stop();
       }
     };
-  }, [roomId, gameId, navigate]);
+  }, [roomId, gameId, navigate, t]);
 
   const connectionBadge = useMemo(() => {
     if (connectionState === 'connected') {
-      return <Badge variant="success">Connected</Badge>;
+      return <Badge variant="success">{t('connected')}</Badge>;
     }
 
     if (connectionState === 'connecting') {
-      return <Badge variant="primary">Connecting</Badge>;
+      return <Badge variant="primary">{t('connecting')}</Badge>;
     }
 
-    return <Badge variant="warning">Disconnected</Badge>;
-  }, [connectionState]);
+    return <Badge variant="warning">{t('disconnected')}</Badge>;
+  }, [connectionState, t]);
 
   const isMyTurn = playerSymbol === currentTurn && isStarted && !isFinished;
   const winnerName = winner ? (winner === 'X' ? playerXName : playerOName) : null;
@@ -217,17 +219,17 @@ function TicTacToeGame() {
 
       if (!result.accepted) {
         pendingMoveKeys.current.delete(index);
-        setStatusMessage(result.message ?? 'La jugada no fue aceptada.');
+        setStatusMessage(result.message ?? t('moveRejected'));
         return;
       }
 
       pendingMoveKeys.current.delete(index);
       if (result.replayed) {
-        setStatusMessage(result.message ?? 'La jugada ya estaba registrada.');
+        setStatusMessage(result.message ?? t('moveRecorded'));
       }
     } catch (error) {
       console.error(error);
-      setStatusMessage('No se pudo confirmar la jugada. Reinténtala para reconciliar el estado.');
+      setStatusMessage(t('moveConfirmFailed'));
     }
   };
 
@@ -242,7 +244,7 @@ function TicTacToeGame() {
       await connection.invoke('ReiniciarPartida', roomId);
     } catch (error) {
       console.error(error);
-      setStatusMessage('No se pudo reiniciar la partida.');
+      setStatusMessage(t('restartFailed'));
     }
   };
 
@@ -257,7 +259,7 @@ function TicTacToeGame() {
   return (
     <main className="min-h-screen bg-transparent text-[#edf6ff]">
       <div className="relative min-h-screen">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,230,255,0.12),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.08),transparent_20%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,230,255,0.12),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.08),transparent_20%)]" />
 
          <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
 
@@ -271,15 +273,15 @@ function TicTacToeGame() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="grid gap-2">
                     <span className="text-sm uppercase tracking-[0.18em] text-[#97dafc]/58">
-                      Tic-Tac-Toe
+                      {t('ticTacToe')}
                     </span>
                     <h1 className="font-['Rajdhani'] text-[clamp(2.8rem,5vw,4.4rem)] leading-none font-bold uppercase tracking-[0.06em] text-[#f6fbff]">
-                      Sala {roomName}
+                      {t('room', { name: roomName ?? '' })}
                     </h1>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {connectionBadge}
-                    <Badge variant="primary">{playersConnected}/2 players</Badge>
+                    <Badge variant="primary">{t('playersCount', { count: playersConnected })}</Badge>
                   </div>
                 </div>
 
@@ -307,14 +309,14 @@ function TicTacToeGame() {
                   <p className="text-center text-sm font-medium text-[#f2f8ff]">
                     {isFinished ? (
                       winnerName ? (
-                        <span>Victoria de <strong>{winnerName}</strong></span>
+                        <span>{t('victory', { name: winnerName })}</span>
                       ) : (
-                        <span>Empate</span>
+                        <span>{t('draw')}</span>
                       )
                     ) : (
                       <span>
-                        Turno de <strong>{currentTurnPlayerName}</strong>
-                        {isMyTurn ? ' • Te toca jugar' : ''}
+                        {t('turn', { name: currentTurnPlayerName })}
+                        {isMyTurn ? ` • ${t('yourTurn')}` : ''}
                       </span>
                     )}
                   </p>
@@ -337,7 +339,7 @@ function TicTacToeGame() {
               </div>
 
               {/* ─── Right column: Panel lateral ─── */}
-              <aside className="grid content-start gap-4">
+              <aside className="xl:sticky xl:top-6 xl:self-start grid content-start gap-4">
                 {playerCards.map((card) => (
                   <article
                     key={card.label}
@@ -357,7 +359,7 @@ function TicTacToeGame() {
 
                 <div className="rounded-[24px] border border-[rgba(255,199,106,0.16)] bg-[rgba(255,199,106,0.08)] px-5 py-4 text-center">
                   <p className="text-[0.78rem] uppercase tracking-[0.2em] text-[#ffe2b8]/60">
-                    Estado
+                     {t('status')}
                   </p>
                   <p className="mt-2 text-[0.95rem] font-semibold leading-5 text-[#fff7ec]">
                     {statusMessage}
@@ -366,10 +368,10 @@ function TicTacToeGame() {
 
                 <div className="grid gap-2">
                   <Button fullWidth variant="surface" onClick={handleRestart} disabled={!isStarted}>
-                    Reiniciar partida
+                     {t('restartGame')}
                   </Button>
                   <Button fullWidth onClick={() => navigate('/game/tic-tac-toe')}>
-                    Volver al lobby
+                     {t('backToLobby')}
                   </Button>
                 </div>
               </aside>

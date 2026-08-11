@@ -8,6 +8,7 @@ import Spinner from '../components/ui/Spinner';
 import ErrorBoundary from '../components/ui/ErrorBoundary';
 import { useGame } from '../hooks/useGame';
 import { usePresence } from '../hooks/usePresence';
+import { useI18n } from '../i18n/LanguageContext';
 
 function ArenaIcon() {
   return (
@@ -29,6 +30,7 @@ function BoltIcon() {
 }
 
 function Home() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const {
     games,
@@ -55,7 +57,7 @@ function Home() {
   return (
     <main className="min-h-screen bg-transparent text-[#edf6ff]">
       <div className="relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,230,255,0.12),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.08),transparent_20%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(120,230,255,0.12),transparent_26%),radial-gradient(circle_at_80%_18%,rgba(255,123,99,0.08),transparent_20%)]" />
 
         <Navbar onlineCount={totalOnline} />
 
@@ -63,7 +65,7 @@ function Home() {
           {isLobbyLoading ? (
             <div className={loadingPanelClass}>
               <Spinner size={28} />
-              <span>Loading lobby...</span>
+              <span>{t('loadingLobby')}</span>
             </div>
           ) : (
             <>
@@ -71,13 +73,13 @@ function Home() {
                 <article className="flex h-full overflow-hidden rounded-[34px] border border-[rgba(141,232,255,0.16)] bg-[linear-gradient(135deg,rgba(8,18,34,0.96),rgba(6,14,28,0.96))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.22)]">
                   <div className="flex w-full flex-wrap items-center justify-between gap-6">
                     <div className="min-w-[240px] flex-1">
-                      <span className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/68">Lobby central</span>
+                      <span className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/68">{t('centralLobby')}</span>
                       <h1 className="mt-1 font-['Rajdhani'] text-[clamp(2rem,4vw,2.8rem)] font-bold uppercase leading-[0.9] tracking-[0.05em]">
-                        Choose the next
-                        <span className="block text-[#78e6ff]">fight.</span>
+                        {t('chooseNext')}
+                        <span className="block text-[#78e6ff]">{t('fight')}</span>
                       </h1>
                       <p className="mt-2 max-w-[480px] text-[0.92rem] leading-6 text-[#d6e8f8]/68">
-                        Select a game, check your rank, and jump into a match.
+                        {t('selectGameDescription')}
                       </p>
                     </div>
 
@@ -95,10 +97,10 @@ function Home() {
                             <ArenaIcon />
                           </div>
                           <div>
-                            <p className="text-[0.95rem] font-bold">{selectedGame?.name ?? 'Select a game'}</p>
+                            <p className="text-[0.95rem] font-bold">{selectedGame?.name ?? t('selectGame')}</p>
                             <p className="text-xs text-[#d6e8f8]/62">
                               <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-[#86f0be]" />
-                              {gamesOnline[selectedGame?.id ?? ''] ?? 0} jugadores
+                              {gamesOnline[selectedGame?.id ?? ''] ?? 0} {t('players')}
                             </p>
                           </div>
                         </div>
@@ -110,7 +112,7 @@ function Home() {
                         onClick={handleFindMatch}
                       >
                         <BoltIcon />
-                        {isFindingMatch ? 'Finding match...' : 'Quick match'}
+                        {isFindingMatch ? t('findingMatch') : t('quickMatch')}
                       </Button>
                     </div>
                   </div>
@@ -119,7 +121,7 @@ function Home() {
 
               <div className="mt-10 flex items-center gap-3">
                 <div className="h-px flex-1 bg-[linear-gradient(90deg,rgba(141,232,255,0.15),transparent)]" />
-                <span className="text-[0.72rem] uppercase tracking-[0.28em] text-[#97dafc]/36">arenas</span>
+                <span className="text-[0.72rem] uppercase tracking-[0.28em] text-[#97dafc]/36">{t('arenas')}</span>
                 <div className="h-px flex-1 bg-[linear-gradient(270deg,rgba(141,232,255,0.15),transparent)]" />
               </div>
 
@@ -139,11 +141,11 @@ function Home() {
                   <>
                     <div className={loadingPanelClass}>
                       <Spinner size={28} />
-                      <span>Loading leaderboard...</span>
+                      <span>{t('loadingLeaderboard')}</span>
                     </div>
                     <div className={loadingPanelClass}>
                       <Spinner size={28} />
-                      <span>Loading your stats...</span>
+                      <span>{t('loadingStats')}</span>
                     </div>
                   </>
                 ) : (

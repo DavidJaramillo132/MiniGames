@@ -153,10 +153,48 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapFallbackToFile("/index.html");
+app.MapFallback(async context =>
+{
+    var path = context.Request.Path.Value ?? "/";
+    var isSpaRoute = path is "/" or "/login" or "/register" or "/app" or "/home" || IsKnownGameRoute(path);
+
+    if ((!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method)) || !isSpaRoute)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    if (path != "/")
+    {
+        context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+    }
+
+    var indexFile = app.Environment.WebRootFileProvider.GetFileInfo("index.html");
+
+    if (!indexFile.Exists || indexFile.PhysicalPath is null)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    await Results.File(indexFile.PhysicalPath, "text/html; charset=utf-8").ExecuteAsync(context);
+});
 
 // SignalR hub
 app.MapHub<ReactApp1.Server.Hubs.GameHub>("/gameHub").RequireAuthorization();
 app.MapHub<ReactApp1.Server.Hubs.PresenceHub>("/presenceHub").RequireAuthorization();
 
 app.Run();
+
+static bool IsKnownGameRoute(string path) => path is "/game/tic-tac-toe" or "/game/memory" or "/game/trivia" ||
+    IsRoomRoute(path, "tic-tac-toe") ||
+    IsRoomRoute(path, "memory") ||
+    IsRoomRoute(path, "trivia");
+
+static bool IsRoomRoute(string path, string gameSlug)
+{
+    var prefix = $"/game/{gameSlug}/room/";
+    return path.StartsWith(prefix, StringComparison.Ordinal) &&
+        path[prefix.Length..].Length > 0 &&
+        !path[prefix.Length..].Contains('/');
+}

@@ -95,7 +95,8 @@ public sealed class MemorySession : IGameSession
     };
     public object GetFinalResult(Guid?[] playerIds) => new { game = Slug, scores = _scores, winnerUserId = _scores[0] == _scores[1] ? (Guid?)null : playerIds[_scores[0] > _scores[1] ? 0 : 1], draw = _scores[0] == _scores[1] };
     private static bool TryPosition(string payload, out int position) { try { position = JsonDocument.Parse(payload).RootElement.GetProperty("position").GetInt32(); return true; } catch { position = -1; return false; } }
-    private static string PairLabel(int value) => ((char)('A' + value)).ToString();
+    private static readonly string[] _pairLabels = ["🪐", "🛸", "👽", "🌙", "⭐", "🚀"];
+    private static string PairLabel(int value) => _pairLabels[value];
     private enum CardState { Hidden, Revealed, Claimed }
 }
 

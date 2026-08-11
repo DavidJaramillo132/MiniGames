@@ -4,6 +4,8 @@ import AppRoutes from './routes/AppRoutes';
 import { useAuth } from './hooks/useAuth';
 import { getTokenExpiration } from './utils/tokenHelper';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+import LanguageToggle from './components/ui/LanguageToggle';
+import RouteMetadata from './components/seo/RouteMetadata';
 
 function App() {
   const { initializeSession, logout, token } = useAuth();
@@ -31,6 +33,8 @@ function App() {
 
   return (
     <BrowserRouter>
+      <RouteMetadata />
+      <LanguageToggle />
       <ErrorBoundary>
         <AppRoutes />
       </ErrorBoundary>

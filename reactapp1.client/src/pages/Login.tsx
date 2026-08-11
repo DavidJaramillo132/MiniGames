@@ -5,6 +5,7 @@ import Input from '../components/ui/Input';
 import ErrorFallback from '../components/ui/ErrorFallback';
 import { useAuth } from '../hooks/useAuth';
 import type { LoginCredentials } from '../types/auth.types';
+import { useI18n } from '../i18n/LanguageContext';
 
 function GamepadIcon() {
   return (
@@ -19,6 +20,7 @@ function GamepadIcon() {
 }
 
 function Login() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
@@ -42,7 +44,7 @@ function Login() {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 text-[#edf6ff]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(120,230,255,0.16),transparent_20%),radial-gradient(circle_at_85%_18%,rgba(255,123,99,0.12),transparent_18%),radial-gradient(circle_at_50%_75%,rgba(77,163,255,0.12),transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(120,230,255,0.16),transparent_20%),radial-gradient(circle_at_85%_18%,rgba(255,123,99,0.12),transparent_18%),radial-gradient(circle_at_50%_75%,rgba(77,163,255,0.12),transparent_28%)]" />
 
       <section className="relative grid w-full max-w-[1160px] overflow-hidden rounded-[36px] border border-[rgba(141,232,255,0.16)] bg-[linear-gradient(180deg,rgba(8,18,34,0.94),rgba(4,10,20,0.98))] shadow-[0_28px_90px_rgba(0,0,0,0.3)] lg:grid-cols-[0.95fr_1.05fr]">
         <aside className="hidden border-r border-[rgba(141,232,255,0.12)] bg-[linear-gradient(135deg,rgba(120,230,255,0.08),rgba(255,123,99,0.08))] p-9 lg:grid">
@@ -54,25 +56,25 @@ function Login() {
                 </div>
                 <div>
                   <div className="font-['Rajdhani'] text-[2.5rem] font-bold uppercase tracking-[0.08em]">PlayHub</div>
-                  <div className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">Competitive return</div>
+                  <div className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">{t('loginReturn')}</div>
                 </div>
               </div>
 
               <div className="grid gap-4">
                 <h1 className="font-['Rajdhani'] text-[4.6rem] font-bold uppercase leading-[0.88] tracking-[0.05em] text-[#f6fbff]">
-                  Back to
-                  <span className="block text-[#78e6ff]">the arena.</span>
+                  {t('backToArena')}
+                  <span className="block text-[#78e6ff]">{t('theArena')}</span>
                 </h1>
                 <p className="max-w-[420px] text-[1rem] leading-8 text-[#d6e8f8]/68">
-                  Check your progress, return to the lobby, and keep pushing your rank in competitive matches with a much clearer and livelier experience.
+                  {t('loginDescription')}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4">
               <article className="rounded-[24px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.03)] p-5">
-                <p className="text-[0.78rem] uppercase tracking-[0.22em] text-[#97dafc]/62">Today on PlayHub</p>
-                <p className="mt-3 text-[1.7rem] font-semibold text-[#f7fbff]">New duels, new streaks, new positions.</p>
+                <p className="text-[0.78rem] uppercase tracking-[0.22em] text-[#97dafc]/62">{t('todayOn')}</p>
+                <p className="mt-3 text-[1.7rem] font-semibold text-[#f7fbff]">{t('loginPromo')}</p>
               </article>
             </div>
           </div>
@@ -87,15 +89,15 @@ function Login() {
                 </div>
                 <div>
                   <div className="font-['Rajdhani'] text-[2.2rem] font-bold uppercase tracking-[0.08em]">PlayHub</div>
-                  <div className="text-[0.76rem] uppercase tracking-[0.24em] text-[#97dafc]/68">Competitive return</div>
+                  <div className="text-[0.76rem] uppercase tracking-[0.24em] text-[#97dafc]/68">{t('loginReturn')}</div>
                 </div>
               </div>
             </div>
 
             <div className="grid gap-3">
-              <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">Sign in</p>
-              <h2 className="text-[2.4rem] font-bold tracking-[-0.05em] text-[#f7fbff]">Welcome back</h2>
-              <p className="text-[#d6e8f8]/66">Sign in to your account and get back to competing where you left off.</p>
+              <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">{t('signIn')}</p>
+              <h2 className="text-[2.4rem] font-bold tracking-[-0.05em] text-[#f7fbff]">{t('welcomeBack')}</h2>
+              <p className="text-[#d6e8f8]/66">{t('loginPrompt')}</p>
             </div>
 
             <div className="mt-8 grid gap-4">
@@ -104,7 +106,7 @@ function Login() {
               ) : null}
 
               <Input
-                label="Email"
+                label={t('email')}
                 type="email"
                 placeholder="you@example.com"
                 value={credentials.email}
@@ -112,24 +114,24 @@ function Login() {
               />
 
               <Input
-                label="Password"
+                label={t('password')}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder={t('enterPassword')}
                 value={credentials.password}
                 onChange={(value) => setCredentials((current) => ({ ...current, password: value }))}
-                actionLabel={showPassword ? 'Hide' : 'Show'}
+                actionLabel={showPassword ? t('hide') : t('show')}
                 onActionClick={() => setShowPassword((current) => !current)}
               />
             </div>
 
             <div className="mt-6 grid gap-4">
               <Button fullWidth isLoading={isLoading} onClick={handleSignIn}>
-                {isLoading ? 'Signing in...' : 'Enter the lobby'}
+                {isLoading ? t('signingIn') : t('enterLobby')}
               </Button>
 
               <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                <Button variant="ghost" onClick={() => navigate('/register')}>Create account</Button>
-                <Button variant="ghost" onClick={() => undefined}>Forgot password?</Button>
+                <Button variant="ghost" onClick={() => navigate('/register')}>{t('createAccount')}</Button>
+                <Button variant="ghost" onClick={() => undefined}>{t('forgotPassword')}</Button>
               </div>
             </div>
           </div>

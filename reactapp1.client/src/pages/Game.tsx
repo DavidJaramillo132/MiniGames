@@ -15,8 +15,10 @@ import { useSignalR } from '../hooks/useSignalR';
 import { usePresence } from '../hooks/usePresence';
 import { getRoomsForGame, createRoom, type RoomSummary } from '../services/gameService';
 import type { RoomListItem } from '../components/game/RoomList';
+import { useI18n } from '../i18n/LanguageContext';
 
 function Game() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { gameId } = useParams<{ gameId: string }>();
@@ -43,9 +45,9 @@ function Game() {
       setAvailableRooms(rooms);
     } catch (error) {
       console.error('Failed to load rooms:', error);
-      setRoomsError('Failed to load rooms.');
+      setRoomsError(t('failedRooms'));
     }
-  }, [gameId]);
+  }, [gameId, t]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadRooms(), 0);
@@ -125,7 +127,7 @@ function Game() {
           {isDetailsLoading || !details || !selectedGame ? (
             <div className={`${panelClass} flex min-h-[320px] flex-col items-center justify-center gap-3 text-[#f5f7ff]/68`}>
               <Spinner size={28} />
-              <span>Loading match room...</span>
+              <span>{t('loadingMatchRoom')}</span>
             </div>
           ) : (
             <div className="grid gap-4">
@@ -159,16 +161,16 @@ function Game() {
                     <Badge variant="primary">{status}</Badge>
                     <span className="ml-1 flex items-center gap-1.5 text-[#f5f7ff]/78">
                       <span className="h-2 w-2 rounded-full bg-[#86f0be]" />
-                      {gameOnline} jugador en línea
+                      {t('playerOnline', { count: gameOnline })}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Button onClick={handleOpenCreateRoom}>Crear sala</Button>
+                    <Button onClick={handleOpenCreateRoom}>{t('createRoom')}</Button>
                     <Button variant="surface" isLoading={isFindingMatch} onClick={handleFindMatch}>
-                      Partida rápida
+                      {t('fastMatch')}
                     </Button>
-                    <Button variant="surface" onClick={() => navigate('/home')}>Volver</Button>
+                    <Button variant="surface" onClick={() => navigate('/home')}>{t('back')}</Button>
                   </div>
                 </section>
               </ErrorBoundary>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Badge from '../ui/Badge';
 import type { Game } from '../../types/game.types';
+import { useI18n } from '../../i18n/LanguageContext';
 
 interface GameCardProps {
   game: Game;
@@ -42,6 +43,7 @@ const iconByGameId: Record<string, ReactNode> = {
 };
 
 function GameCard({ game, isSelected, onSelect }: GameCardProps) {
+  const { t } = useI18n();
   const isDisabled = !game.isAvailable;
   const accentBackground = `${game.accentColor}20`;
 
@@ -83,7 +85,7 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
           {iconByGameId[game.id]}
         </div>
         <span className="rounded-full border border-[rgba(141,232,255,0.14)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[0.72rem] uppercase tracking-[0.24em] text-[#d6e8f8]/66">
-          {isSelected ? 'Selected' : 'Arena'}
+          {isSelected ? t('selected') : t('arena')}
         </span>
       </div>
 
@@ -99,7 +101,7 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
 
       <div className="relative z-10 flex flex-wrap items-center gap-3">
         {game.isAvailable ? (
-          <Badge variant="success">{game.playersOnline} jugando ahora</Badge>
+          <Badge variant="success">{t('playingNow', { count: game.playersOnline ?? 0 })}</Badge>
         ) : (
           <Badge variant="warning" isStatic>
             {game.statusLabel}
@@ -107,7 +109,7 @@ function GameCard({ game, isSelected, onSelect }: GameCardProps) {
         )}
 
         <span className="text-sm uppercase tracking-[0.2em] text-[#d6e8f8]/46">
-          {isDisabled ? 'Coming soon' : 'Ready for match'}
+          {isDisabled ? t('comingSoon') : t('readyForMatch')}
         </span>
       </div>
     </button>

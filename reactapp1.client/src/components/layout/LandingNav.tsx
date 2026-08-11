@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import Button from '../ui/Button';
+import { useI18n } from '../../i18n/LanguageContext';
 
 function GamepadIcon() {
   return (
@@ -15,6 +16,7 @@ function GamepadIcon() {
 
 function LandingNav() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <header className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-5 px-6 py-6 max-[900px]:flex-col max-[900px]:items-stretch max-sm:px-4">
@@ -27,17 +29,17 @@ function LandingNav() {
             PlayHub
           </span>
           <span className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">
-            Multiplayer Arena
+            {t('multiplayerArena')}
           </span>
         </div>
       </div>
 
       <div className="inline-flex items-center gap-3 max-[900px]:w-full">
         <Button className="max-[900px]:flex-1" variant="surface" onClick={() => navigate('/login')}>
-          Iniciar sesion
+          {t('signIn')}
         </Button>
         <Button className="max-[900px]:flex-1" variant="surface" onClick={() => navigate('/register')}>
-          Registrarse
+          {t('register')}
         </Button>
       </div>
     </header>
