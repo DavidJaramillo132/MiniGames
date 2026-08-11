@@ -7,6 +7,7 @@ import Button from '../components/ui/Button';
 import { usePresence } from '../hooks/usePresence';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/LanguageContext';
+import { playMemoryTone, prepareGameAudio } from '../utils/gameAudio';
 
 type Card = { position: number; state: 'hidden' | 'revealed' | 'claimed'; value: string | null };
 type State = { isStarted: boolean; jugadoresConectados: number; gameState?: { cards: Card[]; scores: number[]; currentPlayerIndex: number; isResolving: boolean; isFinished: boolean; winnerIndex: number | null } };
@@ -39,6 +40,7 @@ function MemoryGame() {
   }, [roomId, t]);
 
   const flip = async (position: number) => {
+    prepareGameAudio();
     const connection = connectionRef.current;
     const game = state?.gameState;
     if (!connection || connection.state !== HubConnectionState.Connected || !roomId || !game || playerIndex !== game.currentPlayerIndex || game.isResolving || game.isFinished) return;
@@ -48,6 +50,7 @@ function MemoryGame() {
       const result = await connection.invoke<Result>('JugarAccion', roomId, 'flip', JSON.stringify({ position }), key);
       if (result.accepted) {
         keys.current.delete(position);
+        if (!result.replayed) playMemoryTone();
       } else { keys.current.delete(position); setMessage(result.message ?? t('flipRejected')); }
     } catch { setMessage(t('flipConfirmFailed')); }
   };

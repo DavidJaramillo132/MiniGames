@@ -8,6 +8,7 @@ import { useGame } from '../hooks/useGame';
 import { useAuthStore } from '../store/authStore';
 import { usePresence } from '../hooks/usePresence';
 import { useI18n } from '../i18n/LanguageContext';
+import { playTicTacToeTone, prepareGameAudio } from '../utils/gameAudio';
 
 type BoardCell = string;
 type PlayerSymbol = 'X' | 'O';
@@ -205,6 +206,7 @@ function TicTacToeGame() {
   ];
 
   const handlePlay = async (index: number) => {
+    prepareGameAudio();
     const connection = connectionRef.current;
 
     if (!connection || connection.state !== HubConnectionState.Connected || !roomId) {
@@ -224,6 +226,9 @@ function TicTacToeGame() {
       }
 
       pendingMoveKeys.current.delete(index);
+      if (!result.replayed) {
+        playTicTacToeTone();
+      }
       if (result.replayed) {
         setStatusMessage(result.message ?? t('moveRecorded'));
       }
