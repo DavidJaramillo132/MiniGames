@@ -206,7 +206,7 @@ function TicTacToeGame() {
   ];
 
   const handlePlay = async (index: number) => {
-    prepareGameAudio();
+    await prepareGameAudio();
     const connection = connectionRef.current;
 
     if (!connection || connection.state !== HubConnectionState.Connected || !roomId) {

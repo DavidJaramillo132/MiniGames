@@ -24,6 +24,7 @@ export function useSignalR(enabled = false, roomId?: string) {
       return () => window.clearTimeout(timer);
     }
 
+    let isDisposed = false;
     const stateTimer = window.setTimeout(() => {
       setStatus('connecting');
       setError(null);
@@ -39,30 +40,36 @@ export function useSignalR(enabled = false, roomId?: string) {
       .configureLogging(LogLevel.Warning)
       .build();
 
-    const connectionTimer = window.setTimeout(() => setConnection(connection), 0);
-
     connection.onreconnecting(() => {
-      setStatus('reconnecting');
+      if (!isDisposed) setStatus('reconnecting');
     });
 
     connection.onreconnected(() => {
-      setStatus('connected');
+      if (!isDisposed) setStatus('connected');
     });
 
     connection.onclose(() => {
-      setStatus('disconnected');
+      if (!isDisposed) setStatus('disconnected');
     });
 
-    connection.start()
-      .then(() => setStatus('connected'))
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Connection failed');
-        setStatus('disconnected');
-      });
+    const startTimer = window.setTimeout(() => {
+      setConnection(connection);
+      void connection.start()
+        .then(() => {
+          if (!isDisposed) setStatus('connected');
+        })
+        .catch((err) => {
+          if (!isDisposed) {
+            setError(err instanceof Error ? err.message : 'Connection failed');
+            setStatus('disconnected');
+          }
+        });
+    }, 0);
 
     return () => {
+      isDisposed = true;
       window.clearTimeout(stateTimer);
-      window.clearTimeout(connectionTimer);
+      window.clearTimeout(startTimer);
       connection.stop().catch(() => {});
       setConnection(null);
       setStatus('idle');

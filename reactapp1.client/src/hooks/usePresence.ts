@@ -39,16 +39,19 @@ export function usePresence(gameId?: string) {
       void setCurrentGame();
     });
 
-    void connection.start()
-      .then(setCurrentGame)
-      .catch((error: unknown) => {
-        if (!isDisposed) {
-          console.error('Failed to connect to presence hub:', error);
-        }
-      });
+    const startTimer = window.setTimeout(() => {
+      void connection.start()
+        .then(setCurrentGame)
+        .catch((error: unknown) => {
+          if (!isDisposed) {
+            console.error('Failed to connect to presence hub:', error);
+          }
+        });
+    }, 0);
 
     return () => {
       isDisposed = true;
+      window.clearTimeout(startTimer);
       connection.off('PresenceUpdated', handlePresenceUpdated);
       void connection.stop();
       setSnapshot(emptySnapshot);

@@ -22,28 +22,76 @@ function MemoryGame() {
   const roomName = searchParams.get('name') ?? roomId;
   const { totalOnline, gameOnline } = usePresence('memory');
   const connectionRef = useRef<HubConnection | null>(null);
+  const isRoomJoinedRef = useRef(false);
   const keys = useRef(new Map<number, string>());
   const [state, setState] = useState<State | null>(null);
   const [playerIndex, setPlayerIndex] = useState<number | null>(null);
   const [message, setMessage] = useState('');
+  const [isRoomJoined, setIsRoomJoined] = useState(false);
 
   useEffect(() => {
     if (!roomId) return;
+    let isDisposed = false;
     const connection = new HubConnectionBuilder().withUrl(import.meta.env.VITE_SIGNALR_HUB ?? '/gameHub', { accessTokenFactory: () => useAuthStore.getState().token ?? '' }).withAutomaticReconnect().configureLogging(LogLevel.Warning).build();
     connectionRef.current = connection;
     const onState = (next: State) => { setState(next); setMessage(next.isStarted ? t('gameInProgress') : t('waitingSecond')); };
     const onAssignment = (assignment: Assignment) => setPlayerIndex(assignment.symbol === 'X' ? 0 : 1);
+    const onPlayers = (jugadoresConectados: number) => setState(current => current ? { ...current, jugadoresConectados } : current);
+    const onGameStarted = () => {
+      setState(current => current ? { ...current, isStarted: true } : current);
+      setMessage(t('gameInProgress'));
+    };
+    // The in-room view is already driven by EstadoJuegoActualizado; this subscribes to global room-list broadcasts.
+    const onRoomsChanged = () => {};
+    const joinRoom = async () => {
+      isRoomJoinedRef.current = false;
+      if (!isDisposed) setIsRoomJoined(false);
+      await connection.invoke('UnirseSala', roomId);
+      if (!isDisposed) {
+        isRoomJoinedRef.current = true;
+        setIsRoomJoined(true);
+      }
+    };
     connection.on('EstadoJuegoActualizado', onState);
     connection.on('AsignacionJugador', onAssignment);
-    void connection.start().then(() => connection.invoke('UnirseSala', roomId)).catch(() => setMessage(t('roomConnectFailed')));
-    return () => { connection.off('EstadoJuegoActualizado', onState); connection.off('AsignacionJugador', onAssignment); connectionRef.current = null; void connection.stop(); };
+    connection.on('JugadoresEnSala', onPlayers);
+    connection.on('JuegoIniciado', onGameStarted);
+    connection.on('RoomsChanged', onRoomsChanged);
+    connection.onreconnecting(() => {
+      isRoomJoinedRef.current = false;
+      if (!isDisposed) setIsRoomJoined(false);
+    });
+    connection.onreconnected(() => {
+      void joinRoom().catch(() => {
+        if (!isDisposed) setMessage(t('roomConnectFailed'));
+      });
+    });
+    const startTimer = window.setTimeout(() => {
+      void connection.start()
+        .then(joinRoom)
+        .catch(() => {
+          if (!isDisposed) setMessage(t('roomConnectFailed'));
+        });
+    }, 0);
+    return () => {
+      isDisposed = true;
+      window.clearTimeout(startTimer);
+      isRoomJoinedRef.current = false;
+      connection.off('EstadoJuegoActualizado', onState);
+      connection.off('AsignacionJugador', onAssignment);
+      connection.off('JugadoresEnSala', onPlayers);
+      connection.off('JuegoIniciado', onGameStarted);
+      connection.off('RoomsChanged', onRoomsChanged);
+      connectionRef.current = null;
+      void connection.stop();
+    };
   }, [roomId, t]);
 
   const flip = async (position: number) => {
-    prepareGameAudio();
+    await prepareGameAudio();
     const connection = connectionRef.current;
     const game = state?.gameState;
-    if (!connection || connection.state !== HubConnectionState.Connected || !roomId || !game || playerIndex !== game.currentPlayerIndex || game.isResolving || game.isFinished) return;
+    if (!connection || connection.state !== HubConnectionState.Connected || !isRoomJoinedRef.current || !roomId || !game || playerIndex !== game.currentPlayerIndex || game.isResolving || game.isFinished) return;
     const key = keys.current.get(position) ?? crypto.randomUUID();
     keys.current.set(position, key);
     try {
@@ -58,7 +106,7 @@ function MemoryGame() {
   if (!roomId) return <Navigate to="/game/memory" replace />;
   const game = state?.gameState;
   const isMyTurn = playerIndex === game?.currentPlayerIndex;
-  return <main className="min-h-screen text-[#edf6ff]"><Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} /><section className="px-6 py-5 max-sm:px-4 lg:flex lg:min-h-[calc(100vh-7rem)] lg:items-center lg:py-4"><div className="mx-auto w-full max-w-5xl rounded-[34px] border border-[rgba(141,232,255,0.14)] bg-[rgba(8,18,34,0.96)] p-6"><div className="flex flex-wrap justify-between gap-3"><div><span className="text-sm uppercase tracking-[0.18em] text-[#97dafc]/58">Memory / Pairs</span><h1 className="font-['Rajdhani'] text-4xl font-bold uppercase">Room {roomName}</h1></div><div className="flex gap-2"><Badge variant="primary">{state?.jugadoresConectados ?? 0}/2 players</Badge><Badge variant="success">You {game?.scores[playerIndex ?? 0] ?? 0} pairs</Badge></div></div><p className="mt-3 text-[#d7ebff]/70">{game?.isFinished ? game.winnerIndex === null ? 'Draw.' : game.winnerIndex === playerIndex ? 'You win.' : 'Opponent wins.' : isMyTurn ? 'Your turn: flip a card.' : game?.isResolving ? 'Resolving cards...' : message}</p><div className="mt-4 grid grid-cols-3 gap-3 lg:grid-cols-4">{(game?.cards ?? Array.from({ length: 12 }, (_, position) => ({ position, state: 'hidden' as const, value: null }))).map(card => <button key={card.position} type="button" disabled={!isMyTurn || card.state !== 'hidden' || game?.isResolving || game?.isFinished} onClick={() => flip(card.position)} className="aspect-square rounded-[18px] border border-[rgba(141,232,255,0.14)] bg-[rgba(255,255,255,0.03)] text-3xl disabled:opacity-60">{card.value ?? '?'}</button>)}</div><div className="mt-4 flex justify-end"><Button onClick={() => navigate('/game/memory')}>Back to Memory lobby</Button></div></div></section></main>;
+  return <main className="min-h-screen text-[#edf6ff]"><Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} /><section className="px-6 py-5 max-sm:px-4 lg:flex lg:min-h-[calc(100vh-7rem)] lg:items-center lg:py-4"><div className="mx-auto w-full max-w-5xl rounded-[34px] border border-[rgba(141,232,255,0.14)] bg-[rgba(8,18,34,0.96)] p-6"><div className="flex flex-wrap justify-between gap-3"><div><span className="text-sm uppercase tracking-[0.18em] text-[#97dafc]/58">Memory / Pairs</span><h1 className="font-['Rajdhani'] text-4xl font-bold uppercase">Room {roomName}</h1></div><div className="flex gap-2"><Badge variant="primary">{state?.jugadoresConectados ?? 0}/2 players</Badge><Badge variant="success">You {game?.scores[playerIndex ?? 0] ?? 0} pairs</Badge></div></div><p className="mt-3 text-[#d7ebff]/70">{game?.isFinished ? game.winnerIndex === null ? 'Draw.' : game.winnerIndex === playerIndex ? 'You win.' : 'Opponent wins.' : isMyTurn && isRoomJoined ? 'Your turn: flip a card.' : game?.isResolving ? 'Resolving cards...' : message}</p><div className="mt-4 grid grid-cols-3 gap-3 lg:grid-cols-4">{(game?.cards ?? Array.from({ length: 12 }, (_, position) => ({ position, state: 'hidden' as const, value: null }))).map(card => <button key={card.position} type="button" disabled={!isRoomJoined || !isMyTurn || card.state !== 'hidden' || game?.isResolving || game?.isFinished} onClick={() => flip(card.position)} className="aspect-square rounded-[18px] border border-[rgba(141,232,255,0.14)] bg-[rgba(255,255,255,0.03)] text-3xl disabled:opacity-60">{card.value ?? '?'}</button>)}</div><div className="mt-4 flex justify-end"><Button onClick={() => navigate('/game/memory')}>Back to Memory lobby</Button></div></div></section></main>;
 }
 
 export default MemoryGame;
