@@ -36,7 +36,6 @@ services:
       - caddy_config:/config
     networks:
       - proxy
-      - caddy_net
     restart: unless-stopped
 
   db:
@@ -66,5 +65,3 @@ networks:
     ipam:
       config:
         - subnet: 172.30.0.0/24
-  caddy_net:
-    external: true
