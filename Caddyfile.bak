@@ -2,5 +2,5 @@ playhubb.site {
 	reverse_proxy app:8080
 }
 bot.playhubb.site {
-	reverse_proxy frontend:3000
+	reverse_proxy 158.23.163.230:3000
 }
