@@ -10,16 +10,16 @@ interface BadgeProps {
 
 function Badge({ children, variant = 'success', isStatic = false }: BadgeProps) {
   const variantClassName = {
-    success: 'border-[rgba(134,240,190,0.28)] bg-[rgba(134,240,190,0.1)] text-[#86f0be]',
-    warning: 'border-[rgba(255,199,106,0.28)] bg-[rgba(255,199,106,0.1)] text-[#ffc76a]',
-    primary: 'border-[rgba(120,230,255,0.28)] bg-[rgba(120,230,255,0.1)] text-[#8ce9ff]',
+    success: 'border border-[#00f5a0]/35 bg-[#00f5a0]/10 text-[#00f5a0] shadow-[0_0_10px_rgba(0,245,160,0.15)]',
+    warning: 'border border-[#ffaa00]/35 bg-[#ffaa00]/10 text-[#ffaa00] shadow-[0_0_10px_rgba(255,170,0,0.15)]',
+    primary: 'border border-[#d4ff00]/35 bg-[#d4ff00]/10 text-[#d4ff00] shadow-[0_0_10px_rgba(212,255,0,0.18)]',
   }[variant];
 
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold tracking-[0.02em] ${variantClassName}`}
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-['Rajdhani'] text-xs font-bold uppercase tracking-[0.14em] ${variantClassName}`}
     >
-      {!isStatic ? <span className="h-2 w-2 rounded-full bg-current" /> : null}
+      {!isStatic ? <span className="h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_6px_currentColor] animate-pulse" /> : null}
       {children}
     </span>
   );

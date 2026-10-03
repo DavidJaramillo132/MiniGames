@@ -20,15 +20,15 @@ function Button({
   ...props
 }: ButtonProps) {
   const baseClassName =
-    'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border px-5 py-3 text-sm font-semibold tracking-[0.01em] transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78e6ff]/50 disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-65';
+    'inline-flex min-h-12 cursor-pointer items-center justify-center gap-2.5 rounded-[14px] px-5 py-3 text-sm font-bold tracking-[0.02em] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4ff00] focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080a] disabled:pointer-events-none disabled:translate-y-0 disabled:opacity-40';
 
   const variantClassName = {
     primary:
-      'border-[#86d9ff]/30 bg-[linear-gradient(135deg,#71e4ff_0%,#3b82f6_55%,#2646c7_100%)] text-[#02111e] shadow-[0_16px_32px_rgba(59,130,246,0.28)] hover:-translate-y-0.5 hover:shadow-[0_24px_42px_rgba(120,230,255,0.22)]',
+      'border border-[#e2ff33] bg-[#d4ff00] text-[#08080a] font-bold shadow-[0_0_20px_rgba(212,255,0,0.35)] hover:bg-[#e2ff33] hover:shadow-[0_0_28px_rgba(212,255,0,0.55)] active:scale-[0.97]',
     surface:
-      'border-[rgba(141,232,255,0.22)] bg-[rgba(7,19,34,0.84)] text-[#edf6ff] backdrop-blur-md hover:-translate-y-0.5 hover:border-[rgba(141,232,255,0.38)] hover:bg-[rgba(10,25,44,0.92)]',
+      'border border-white/[0.1] bg-[#17171d] text-[#f4f4f6] hover:border-white/[0.22] hover:bg-[#1f1f27] active:scale-[0.97] shadow-[0_4px_16px_rgba(0,0,0,0.5)]',
     ghost:
-      'min-h-0 rounded-none border-transparent bg-transparent px-0 py-0 text-[#90dcff] hover:bg-transparent hover:text-[#d7f7ff]',
+      'min-h-0 rounded-lg border border-transparent bg-transparent px-3 py-1.5 text-[#8c8c9a] hover:border-white/[0.1] hover:bg-white/[0.04] hover:text-[#f4f4f6] active:scale-[0.97]',
   }[variant];
 
   const classes = [

@@ -5,25 +5,14 @@ import Input from '../components/ui/Input';
 import { useAuth } from '../hooks/useAuth';
 import type { RegistrationFields } from '../types/auth.types';
 import { useI18n } from '../i18n/LanguageContext';
+import { GamepadIcon } from '../components/ui/Icons';
 
 const strengthLevels = [
-  { label: 'Weak', className: 'bg-[#ff7b63]' },
-  { label: 'Fair', className: 'bg-[#ffc76a]' },
-  { label: 'Good', className: 'bg-[#78e6ff]' },
-  { label: 'Strong', className: 'bg-[#86f0be]' },
+  { label: 'Weak', className: 'bg-[#ff3355]' },
+  { label: 'Fair', className: 'bg-[#ffaa00]' },
+  { label: 'Good', className: 'bg-[#f4f4f6]' },
+  { label: 'Strong', className: 'bg-[#d4ff00]' },
 ];
-
-function GamepadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#f8f8ff" strokeWidth="1.9">
-      <path d="M7 10h10a4 4 0 0 1 3.9 4.9l-.6 2.6a2.4 2.4 0 0 1-3.8 1.3L13.8 17h-3.6l-2.7 1.8a2.4 2.4 0 0 1-3.8-1.3L3.1 15A4 4 0 0 1 7 10Z" />
-      <path d="M8 13v4" />
-      <path d="M6 15h4" />
-      <path d="M16 14h.01" />
-      <path d="M18 16h.01" />
-    </svg>
-  );
-}
 
 function calculateStrength(password: string) {
   let score = 0;
@@ -82,44 +71,37 @@ function Register() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 text-[#edf6ff]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(120,230,255,0.14),transparent_20%),radial-gradient(circle_at_84%_18%,rgba(255,123,99,0.12),transparent_18%),radial-gradient(circle_at_55%_76%,rgba(255,199,106,0.08),transparent_24%)]" />
-
-      <section className="relative grid w-full max-w-[1180px] overflow-hidden rounded-[36px] border border-[rgba(141,232,255,0.16)] bg-[linear-gradient(180deg,rgba(8,18,34,0.94),rgba(4,10,20,0.98))] shadow-[0_28px_90px_rgba(0,0,0,0.3)] lg:grid-cols-[1fr_1fr]">
-        <aside className="hidden border-r border-[rgba(141,232,255,0.12)] bg-[linear-gradient(135deg,rgba(120,230,255,0.08),rgba(255,199,106,0.08))] p-9 lg:grid">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 text-[#f4f4f6]">
+      <section className="relative grid w-full max-w-[1140px] overflow-hidden rounded-[26px] border border-white/[0.08] bg-[#111114] shadow-[0_24px_70px_rgba(0,0,0,0.8)] lg:grid-cols-[1fr_1fr]">
+        <aside className="hidden border-r border-white/[0.08] bg-[#0d0d10] p-9 lg:grid">
           <div className="grid content-between gap-8">
-            <div className="grid gap-5">
+            <div className="grid gap-6">
               <div className="inline-flex items-center gap-3">
-                <div className="inline-flex h-[56px] w-[56px] items-center justify-center rounded-[20px] border border-[rgba(120,230,255,0.28)] bg-[rgba(120,230,255,0.12)]">
+                <div className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[16px] border border-[#d4ff00]/30 bg-[#d4ff00]/10 shadow-[0_0_16px_rgba(212,255,0,0.2)] text-[#d4ff00]">
                   <GamepadIcon />
                 </div>
-                <div>
-                  <div className="font-['Rajdhani'] text-[2.5rem] font-bold uppercase tracking-[0.08em]">
-                    PlayHub
-                  </div>
-                  <div className="text-[0.78rem] uppercase tracking-[0.26em] text-[#97dafc]/70">
-                    {t('newChallenger')}
-                  </div>
+                <div className="font-['Rajdhani'] text-[2.4rem] font-bold uppercase tracking-[0.06em] text-[#f4f4f6]">
+                  PlayHub
                 </div>
               </div>
 
-              <div className="grid gap-4">
-                <h1 className="font-['Rajdhani'] text-[4.5rem] font-bold uppercase leading-[0.88] tracking-[0.05em] text-[#f6fbff]">
+              <div className="grid gap-3">
+                <h1 className="font-['Rajdhani'] text-[4rem] font-bold uppercase leading-[0.9] tracking-[0.03em] text-[#f4f4f6]">
                   {t('buildTag')}
-                  <span className="block text-[#ffc76a]">{t('playerTag')}</span>
+                  <span className="block text-[#d4ff00]">{t('playerTag')}</span>
                 </h1>
-                <p className="max-w-[420px] text-[1rem] leading-8 text-[#d6e8f8]/68">
+                <p className="max-w-[420px] text-[0.95rem] leading-relaxed text-[#8c8c9a]">
                   {t('registerDescription')}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4">
-              <article className="rounded-[24px] border border-[rgba(255,199,106,0.16)] bg-[rgba(255,199,106,0.07)] p-5">
-                <p className="text-[0.78rem] uppercase tracking-[0.22em] text-[#ffd8a2]/62">
+              <article className="rounded-[18px] border border-white/[0.08] bg-[#17171d] p-5">
+                <p className="text-[0.78rem] font-bold uppercase tracking-[0.18em] text-[#d4ff00]">
                   {t('whyJoin')}
                 </p>
-                <p className="mt-3 text-[1.7rem] font-semibold leading-tight text-[#fff7eb]">
+                <p className="mt-2 font-['Rajdhani'] text-[1.6rem] font-bold uppercase tracking-tight text-[#f4f4f6]">
                   {t('registerPromo')}
                 </p>
               </article>
@@ -128,38 +110,30 @@ function Register() {
         </aside>
 
         <div className="p-6 sm:p-8 lg:p-10">
-          <div className="mx-auto w-full max-w-[480px]">
-            <div className="mb-8 lg:hidden">
+          <div className="mx-auto w-full max-w-[460px]">
+            <div className="mb-6 lg:hidden">
               <div className="inline-flex items-center gap-3">
-                <div className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[rgba(120,230,255,0.28)] bg-[rgba(120,230,255,0.12)]">
+                <div className="inline-flex h-[48px] w-[48px] items-center justify-center rounded-[14px] border border-[#d4ff00]/30 bg-[#d4ff00]/10 text-[#d4ff00]">
                   <GamepadIcon />
                 </div>
-                <div>
-                  <div className="font-['Rajdhani'] text-[2.2rem] font-bold uppercase tracking-[0.08em]">
-                    PlayHub
-                  </div>
-                  <div className="text-[0.76rem] uppercase tracking-[0.24em] text-[#97dafc]/68">
-                    {t('newChallenger')}
-                  </div>
+                <div className="font-['Rajdhani'] text-[2.2rem] font-bold uppercase tracking-[0.06em] text-[#f4f4f6]">
+                  PlayHub
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-3">
-              <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/62">
-                {t('register')}
-              </p>
-              <h2 className="text-[2.4rem] font-bold tracking-[-0.05em] text-[#f7fbff]">
+            <div className="grid gap-2">
+              <h2 className="font-['Rajdhani'] text-3xl sm:text-4xl font-bold uppercase tracking-wide text-[#f4f4f6]">
                 {t('createYourAccount')}
               </h2>
-              <p className="text-[#d6e8f8]/66">
+              <p className="text-sm text-[#8c8c9a]">
                 {t('registerPrompt')}
               </p>
             </div>
 
             <div className="mt-8 grid gap-4">
               {error ? (
-                <div className="rounded-[18px] border border-[rgba(255,123,99,0.28)] bg-[rgba(255,123,99,0.1)] px-4 py-3 text-sm text-[#ffd5ce]">
+                <div className="rounded-[18px] border border-[#ff3355]/30 bg-[#ff3355]/10 px-4 py-3 text-sm text-[#ffd5ce]">
                   {error}
                 </div>
               ) : null}
@@ -196,12 +170,12 @@ function Register() {
                       <span
                         key={level.label}
                         className={`h-2 rounded-full ${
-                          index < strength ? level.className : 'bg-white/8'
+                          index < strength ? level.className : 'bg-white/10'
                         }`}
                       />
                     ))}
                   </div>
-                  <span className="text-[0.86rem] text-[#d4ecff]/62">
+                  <span className="text-[0.86rem] text-[#8c8c9a]">
                     {t('passwordStrength')} {' '}
                     {fields.password ? t(strengthCopy.label.toLowerCase() as 'weak' | 'fair' | 'good' | 'strong') : t('startTyping')}
                   </span>

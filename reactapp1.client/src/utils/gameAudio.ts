@@ -72,3 +72,13 @@ export function playMemoryTone() {
 export function playTriviaTone() {
   playTone(784, 0.14);
 }
+
+export function playTactileClickTone() {
+  playTone(880, 0.04);
+}
+
+export function playVictoryTone() {
+  playTone(523.25, 0.08);
+  setTimeout(() => playTone(659.25, 0.08), 90);
+  setTimeout(() => playTone(783.99, 0.16), 180);
+}

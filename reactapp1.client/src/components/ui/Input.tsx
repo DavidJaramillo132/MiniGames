@@ -22,27 +22,27 @@ function Input({
 }: InputProps) {
   return (
     <label className="grid gap-2">
-      <span className="text-[0.92rem] font-medium tracking-[0.02em] text-[#d4ecff]/74">{label}</span>
+      <span className="font-['Rajdhani'] text-xs font-bold uppercase tracking-[0.14em] text-[#8c8c9a]">{label}</span>
       <div
-        className={`w-full rounded-[18px] border border-[rgba(141,232,255,0.16)] bg-[rgba(7,18,32,0.82)] text-[#edf6ff] backdrop-blur-md transition duration-200 focus-within:border-[rgba(120,230,255,0.68)] focus-within:shadow-[0_0_0_4px_rgba(120,230,255,0.14)] ${actionLabel ? 'flex items-center' : ''}`}
+        className={`w-full rounded-[14px] border border-white/[0.1] bg-[#0d0d10] text-[#f4f4f6] transition duration-150 focus-within:border-[#d4ff00] focus-within:shadow-[0_0_16px_rgba(212,255,0,0.22)] ${actionLabel ? 'flex items-center' : ''}`}
       >
         <input
           {...props}
-          className={`w-full bg-transparent px-4 py-[15px] text-[#edf6ff] outline-none placeholder:text-[#d9e9ff]/28 ${className ?? ''}`}
+          className={`w-full bg-transparent px-4 py-3.5 text-[#f4f4f6] outline-none placeholder:text-[#8c8c9a]/40 ${className ?? ''}`}
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
         {actionLabel ? (
           <button
             type="button"
-            className="h-full border-0 bg-transparent px-[14px] text-[#c7e8ff]/68 transition hover:text-[#edf6ff]"
+            className="h-full border-0 bg-transparent px-4 font-['Rajdhani'] text-xs font-bold uppercase tracking-[0.14em] text-[#d4ff00] transition hover:text-[#e2ff33]"
             onClick={onActionClick}
           >
             {actionLabel}
           </button>
         ) : null}
       </div>
-      {helpText ? <span className="text-[0.86rem] text-[#d4ecff]/62">{helpText}</span> : null}
+      {helpText ? <span className="text-xs text-[#8c8c9a]">{helpText}</span> : null}
     </label>
   );
 }

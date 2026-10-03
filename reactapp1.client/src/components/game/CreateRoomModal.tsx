@@ -25,15 +25,12 @@ function CreateRoomModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-[620px] rounded-[30px] border border-[rgba(120,230,255,0.18)] bg-[linear-gradient(180deg,rgba(9,20,37,0.98),rgba(4,10,20,0.98))] p-6 shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-sm uppercase tracking-[0.16em] text-[#95defe]/45">{t('createRoom')}</div>
-            <h2 className="mt-2 text-[2rem] leading-none font-bold tracking-[-0.04em] text-[#f5f7ff]">
-              {t('newRoom', { game: gameName ?? '' })}
-            </h2>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm">
+      <div className="w-full max-w-[560px] rounded-[22px] border border-white/[0.08] bg-[#111114]/98 p-6 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="font-['Rajdhani'] text-[2.2rem] font-bold uppercase tracking-[0.04em] text-[#f4f4f6]">
+            {t('newRoom', { game: gameName ?? '' })}
+          </h2>
           <Button variant="ghost" onClick={onClose}>
             {t('close')}
           </Button>

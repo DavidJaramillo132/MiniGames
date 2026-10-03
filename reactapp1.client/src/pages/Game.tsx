@@ -10,12 +10,14 @@ import CreateRoomModal from '../components/game/CreateRoomModal';
 import Leaderboard from '../components/game/Leaderboard';
 import RoomList from '../components/game/RoomList';
 import StatsPanel from '../components/game/StatsPanel';
+import { GamepadIcon, ZapIcon, PlusIcon } from '../components/ui/Icons';
 import { useGame } from '../hooks/useGame';
 import { useSignalR } from '../hooks/useSignalR';
 import { usePresence } from '../hooks/usePresence';
 import { getRoomsForGame, createRoom, type RoomSummary } from '../services/gameService';
 import type { RoomListItem } from '../components/game/RoomList';
 import { useI18n } from '../i18n/LanguageContext';
+import { playTactileClickTone, prepareGameAudio } from '../utils/gameAudio';
 
 function Game() {
   const { t } = useI18n();
@@ -31,15 +33,14 @@ function Game() {
   const [newRoomId, setNewRoomId] = useState('');
   const activeRoomId = searchParams.get('room');
   const { status, connection } = useSignalR(Boolean(activeRoomId), activeRoomId ?? undefined);
+
   useEffect(() => {
     if (gameId) { selectGame(gameId); }
   }, [gameId, selectGame]);
 
   const loadRooms = useCallback(async () => {
     if (!gameId) return;
-
     setRoomsError(null);
-
     try {
       const rooms = await getRoomsForGame(gameId);
       setAvailableRooms(rooms);
@@ -51,18 +52,14 @@ function Game() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadRooms(), 0);
-
     return () => window.clearTimeout(timer);
   }, [loadRooms]);
 
   useEffect(() => {
     if (!connection) return;
-
     const handleRoomsChanged = () => { void loadRooms(); };
-
     connection.on('RoomsChanged', handleRoomsChanged);
     connection.on('RoomDeleted', handleRoomsChanged);
-
     return () => {
       connection.off('RoomsChanged', handleRoomsChanged);
       connection.off('RoomDeleted', handleRoomsChanged);
@@ -83,24 +80,23 @@ function Game() {
 
   const handleConfirmCreateRoom = async () => {
     if (!details || !selectedGame || !gameId) { return; }
-
     const trimmedName = newRoomName.trim();
     const generatedRoomId = newRoomId.trim();
-
     if (!trimmedName || !generatedRoomId) { return; }
 
     try {
       const room = await createRoom(gameId, trimmedName, generatedRoomId);
       handleCloseCreateRoom();
       await loadRooms();
-
       navigate(`/game/${gameId}/room/${room.roomCode}?name=${encodeURIComponent(trimmedName)}`);
     } catch (error) {
       console.error('Failed to create room:', error);
     }
   };
 
-  const handleJoinRoom = (room: RoomListItem) => {
+  const handleJoinRoom = async (room: RoomListItem) => {
+    await prepareGameAudio();
+    playTactileClickTone();
     navigate(`/game/${gameId}/room/${room.id}?name=${encodeURIComponent(room.name)}`);
   };
 
@@ -109,99 +105,102 @@ function Game() {
   }
 
   const handleFindMatch = async () => {
+    await prepareGameAudio();
+    playTactileClickTone();
     const match = await findMatch();
     if (match) { navigate(`/game/${match.gameId}`); }
   };
 
-  const appShellClass =
-    'min-h-screen w-full overflow-x-hidden border-y border-[#2a2a3a] bg-gradient-to-b from-[rgba(20,20,28,0.98)] to-[rgba(15,15,19,0.98)]';
   const panelClass =
-    'rounded-[12px] border border-[rgba(58,58,78,0.72)] bg-gradient-to-b from-[rgba(28,28,40,0.97)] to-[rgba(24,24,35,0.97)] p-4';
+    'rounded-[24px] border border-white/[0.08] bg-[#111114] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)]';
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(83,74,183,0.12),transparent_30%),#0f0f13] font-sans text-[#f5f7ff]">
-      <div className={appShellClass}>
-         <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
+    <main className="min-h-screen bg-transparent text-[#f4f4f6]">
+      <Navbar onlineCount={totalOnline} gameOnlineCount={gameOnline} />
 
-        <section className="min-h-[calc(100vh-126px)] px-6 pb-8 pt-7 max-sm:px-4">
-          {isDetailsLoading || !details || !selectedGame ? (
-            <div className={`${panelClass} flex min-h-[320px] flex-col items-center justify-center gap-3 text-[#f5f7ff]/68`}>
-              <Spinner size={28} />
-              <span>{t('loadingMatchRoom')}</span>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              <ErrorBoundary>
-                <section className={`${panelClass} grid gap-3`}>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-[12px] border"
-                        style={{
-                          color: selectedGame?.accentColor ?? '#78e6ff',
-                          borderColor: `${selectedGame?.accentColor ?? '#78e6ff'}55`,
-                          backgroundColor: `${selectedGame?.accentColor ?? '#78e6ff'}20`,
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9">
-                          <path d="M4 7h16" />
-                          <path d="M7 4v16" />
-                          <path d="M17 4v16" />
-                          <path d="M4 17h16" />
-                        </svg>
-                      </div>
-                      <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-[#f5f7ff]">
-                        {details.gameName}
-                      </h1>
+      <section className="mx-auto max-w-[1360px] px-6 pb-16 pt-3 max-sm:px-4">
+        {isDetailsLoading || !details || !selectedGame ? (
+          <div className={`${panelClass} flex min-h-[320px] flex-col items-center justify-center gap-3 text-[#8c8c9a]`}>
+            <Spinner size={32} />
+            <span className="font-['Rajdhani'] text-sm font-bold uppercase tracking-wider text-[#8c8c9a]">
+              {t('loadingMatchRoom')}
+            </span>
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {/* ─── Matchmaking Arena Header Deck ─── */}
+            <section className="relative overflow-hidden rounded-[26px] border border-white/[0.08] bg-[#111114] p-6 sm:p-8 shadow-[0_24px_70px_rgba(0,0,0,0.8)]">
+              <div className="flex flex-wrap items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div
+                    className="inline-flex h-14 w-14 items-center justify-center rounded-[16px] border shadow-[0_0_20px_rgba(212,255,0,0.2)]"
+                    style={{
+                      color: selectedGame?.accentColor ?? '#d4ff00',
+                      borderColor: `${selectedGame?.accentColor ?? '#d4ff00'}50`,
+                      backgroundColor: `${selectedGame?.accentColor ?? '#d4ff00'}15`,
+                    }}
+                  >
+                    <GamepadIcon size={28} />
+                  </div>
+                  <div>
+                    <h1 className="font-['Rajdhani'] text-3xl sm:text-4xl font-bold uppercase tracking-[0.03em] text-[#f4f4f6]">
+                      {details.gameName}
+                    </h1>
+                    <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                      <Badge variant="success">{details.roomStatus}</Badge>
+                      <Badge variant="primary">{status}</Badge>
+                      <span className="inline-flex items-center gap-1.5 font-['Rajdhani'] text-xs font-bold uppercase tracking-wider text-[#00f5a0]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#00f5a0] animate-pulse" />
+                        {t('playerOnline', { count: gameOnline })}
+                      </span>
                     </div>
                   </div>
+                </div>
 
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <Badge variant="success">{details.roomStatus}</Badge>
-                    <Badge variant="primary">{status}</Badge>
-                    <span className="ml-1 flex items-center gap-1.5 text-[#f5f7ff]/78">
-                      <span className="h-2 w-2 rounded-full bg-[#86f0be]" />
-                      {t('playerOnline', { count: gameOnline })}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button onClick={handleOpenCreateRoom}>{t('createRoom')}</Button>
-                    <Button variant="surface" isLoading={isFindingMatch} onClick={handleFindMatch}>
-                      {t('fastMatch')}
-                    </Button>
-                    <Button variant="surface" onClick={() => navigate('/home')}>{t('back')}</Button>
-                  </div>
-                </section>
-              </ErrorBoundary>
-
-              <div className="grid gap-4 xl:grid-cols-2">
-                <ErrorBoundary>
-                  {roomsError ? (
-                    <ErrorFallback message={roomsError} onRetry={loadRooms} />
-                  ) : (
-                    <RoomList
-                      rooms={availableRooms}
-                      selectedRoomId={activeRoomId}
-                      onSelectRoom={(roomId) => setSearchParams({ room: roomId })}
-                      onJoinRoom={handleJoinRoom}
-                      onCreateRoom={handleOpenCreateRoom}
-                    />
-                  )}
-                </ErrorBoundary>
-
-                <ErrorBoundary>
-                  <StatsPanel stats={details.stats} />
-                </ErrorBoundary>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="primary" isLoading={isFindingMatch} onClick={handleFindMatch}>
+                    <ZapIcon size={16} />
+                    <span>{t('fastMatch')}</span>
+                  </Button>
+                  <Button variant="surface" onClick={handleOpenCreateRoom}>
+                    <PlusIcon size={16} />
+                    <span>{t('createRoom')}</span>
+                  </Button>
+                  <Button variant="surface" onClick={() => navigate('/home')}>
+                    {t('back')}
+                  </Button>
+                </div>
               </div>
+            </section>
+
+            {/* ─── Rooms & Personal Stats Deck ─── */}
+            <div className="grid gap-6 xl:grid-cols-2">
+              <ErrorBoundary>
+                {roomsError ? (
+                  <ErrorFallback message={roomsError} onRetry={loadRooms} />
+                ) : (
+                  <RoomList
+                    rooms={availableRooms}
+                    selectedRoomId={activeRoomId}
+                    onSelectRoom={(roomId) => setSearchParams({ room: roomId })}
+                    onJoinRoom={handleJoinRoom}
+                    onCreateRoom={handleOpenCreateRoom}
+                  />
+                )}
+              </ErrorBoundary>
 
               <ErrorBoundary>
-                <Leaderboard gameName={details.gameName} entries={details.leaderboard} />
+                <StatsPanel stats={details.stats} />
               </ErrorBoundary>
             </div>
-          )}
-        </section>
-      </div>
+
+            {/* ─── Arena Leaderboard ─── */}
+            <ErrorBoundary>
+              <Leaderboard gameName={details.gameName} entries={details.leaderboard} />
+            </ErrorBoundary>
+          </div>
+        )}
+      </section>
 
       <CreateRoomModal
         gameName={details?.gameName}

@@ -1,6 +1,7 @@
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import { useI18n } from '../../i18n/LanguageContext';
+import { UsersIcon, ArrowRightIcon } from '../ui/Icons';
 
 export interface RoomListItem {
   id: string;
@@ -29,54 +30,80 @@ function RoomList({
   const selectedRoom = rooms.find((room) => room.id === selectedRoomId) ?? null;
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.2)]">
-      <div className="mb-3 inline-flex items-center justify-between gap-3 text-[1.35rem] font-bold tracking-[-0.04em]">
-        <span>{t('availableRooms')}</span>
-        <span className="inline-flex h-[30px] min-w-[30px] items-center justify-center rounded-full border border-[rgba(120,230,255,0.22)] bg-[rgba(120,230,255,0.08)] px-2 text-[0.8rem] font-bold text-[#a8efff]">
-          {rooms.length}
+    <section className="flex h-full min-h-[380px] flex-col overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#111114] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+      <div className="mb-5 flex items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+        <div className="flex items-center gap-2.5">
+          <span className="font-['Rajdhani'] text-2xl font-bold uppercase tracking-wide text-[#f4f4f6]">
+            {t('availableRooms')}
+          </span>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full border border-[#d4ff00]/30 bg-[#d4ff00]/10 px-3 py-1 font-['Rajdhani'] text-xs font-bold uppercase tracking-wider text-[#d4ff00]">
+          <UsersIcon size={14} />
+          <span>{rooms.length} SALAS</span>
         </span>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-3">
-        <div className="grid min-h-0 content-start gap-2 overflow-auto pr-1">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-4">
+        <div className="grid min-h-0 content-start gap-3 overflow-auto pr-1">
           {rooms.length === 0 ? (
             <EmptyState
               title={t('noRooms')}
               action={{ label: t('createFirstRoom'), onClick: onCreateRoom }}
             />
           ) : (
-            rooms.map((room) => (
-              <button
-                key={room.id}
-                type="button"
-                className="w-full rounded-[12px] border border-[rgba(141,232,255,0.1)] bg-[rgba(255,255,255,0.02)] p-3 text-left transition hover:border-[rgba(120,230,255,0.34)]"
-                style={
-                  selectedRoomId === room.id
-                    ? {
-                        borderColor: 'rgba(120,230,255,0.68)',
-                        backgroundColor: 'rgba(120,230,255,0.08)',
-                        boxShadow: '0 0 0 1px rgba(120,230,255,0.2) inset',
-                      }
-                    : undefined
-                }
-                onClick={() => onSelectRoom(room.id)}
-              >
-                <div className="mb-1 flex items-center justify-between gap-3">
-                  <strong className="text-[0.95rem]">{room.name}</strong>
-                  <span className="text-[#d7ebff]/68 text-sm">
-                    {room.players}/{room.capacity}
-                  </span>
+            rooms.map((room) => {
+              const isSelected = selectedRoomId === room.id;
+              const isFull = room.players >= room.capacity;
+
+              return (
+                <div
+                  key={room.id}
+                  onClick={() => onSelectRoom(room.id)}
+                  className={`group flex items-center justify-between gap-4 rounded-[16px] border p-4 transition-all duration-150 cursor-pointer ${
+                    isSelected
+                      ? 'border-[#d4ff00] bg-[#d4ff00]/10 shadow-[0_0_20px_rgba(212,255,0,0.2)]'
+                      : 'border-white/[0.08] bg-[#0d0d10] hover:border-white/[0.22] hover:bg-[#15151a]'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5 mb-1">
+                      <strong className="font-['Rajdhani'] text-lg font-bold uppercase tracking-wide text-[#f4f4f6] truncate">
+                        {room.name}
+                      </strong>
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 font-['Rajdhani'] text-xs font-bold uppercase tracking-wider ${
+                          isFull
+                            ? 'border border-[#ff3355]/40 bg-[#ff3355]/15 text-[#ff3355]'
+                            : 'border border-[#00f5a0]/40 bg-[#00f5a0]/15 text-[#00f5a0]'
+                        }`}
+                      >
+                        {room.players}/{room.capacity}
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-[#8c8c9a]">
+                      Host: <strong className="text-[#f4f4f6]">{room.creator}</strong>
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onJoinRoom(room);
+                    }}
+                    disabled={isFull}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-[12px] border border-[#d4ff00]/40 bg-[#d4ff00]/10 px-3.5 py-2 font-['Rajdhani'] text-xs font-bold uppercase tracking-wider text-[#d4ff00] transition-all hover:bg-[#d4ff00] hover:text-[#08080a] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span>{isFull ? 'LLENO' : 'ENTRAR'}</span>
+                    <ArrowRightIcon size={14} />
+                  </button>
                 </div>
-                <div className="flex flex-wrap gap-x-[14px] gap-y-1 text-[0.85rem] text-[#d7ebff]/58">
-                  <span>{t('creator', { name: room.creator })}</span>
-                  <span>{t('playersInside', { count: room.players })}</span>
-                </div>
-              </button>
-            ))
+              );
+            })
           )}
         </div>
 
-        <div className="mt-auto">
+        <div className="pt-2 border-t border-white/[0.08]">
           <Button
             fullWidth
             variant="surface"

@@ -1,112 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import LandingNav from '../components/layout/LandingNav';
 import Spinner from '../components/ui/Spinner';
+import { 
+  GamepadIcon, 
+  ZapIcon, 
+  TrophyIcon, 
+  ArrowRightIcon, 
+  ClockIcon, 
+  UsersIcon, 
+  ShieldIcon, 
+  SignalIcon 
+} from '../components/ui/Icons';
 import { getGames } from '../services/gameService';
 import type { Game } from '../types/game.types';
-import { type TranslationKey } from '../i18n/LanguageProvider';
 import { useI18n } from '../i18n/LanguageContext';
-
-const presentationStats = [
-  { value: '2,400+', label: 'registeredPlayers' },
-  { value: '18,000+', label: 'matchesPlayed' },
-  { value: '142', label: 'onlineNow' },
-  { value: '3', label: 'activeArenas' },
-];
-
-const featurePillars = [
-  {
-    title: 'quickMatches',
-    copy: 'quickMatchesCopy',
-  },
-  {
-    title: 'realRivals',
-    copy: 'realRivalsCopy',
-  },
-  {
-    title: 'visibleProgress',
-    copy: 'visibleProgressCopy',
-  },
-];
-
-const competitiveLoop = [
-  'chooseMinigame',
-  'competeLive',
-  'improveElo',
-];
-
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M8 6l10 6-10 6V6Z" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 4h7v7H4z" />
-      <path d="M13 4h7v7h-7z" />
-      <path d="M4 13h7v7H4z" />
-      <path d="M13 13h7v7h-7z" />
-    </svg>
-  );
-}
-
-function getGameLabel(gameId: string) {
-  if (gameId === 'tic-tac-toe') {
-    return 'duel';
-  }
-
-  if (gameId === 'trivia') {
-    return 'fastPace';
-  }
-
-  if (gameId === 'memory') {
-    return 'pairs';
-  }
-
-  return 'realtime';
-}
-
-function renderGameIcon(game: Game) {
-  if (game.id === 'tic-tac-toe') {
-    return (
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.9">
-        <path d="M8 7L16 17" />
-        <path d="M16 7L8 17" />
-        <circle cx="12" cy="12" r="9" />
-      </svg>
-    );
-  }
-
-  if (game.id === 'memory') {
-    return (
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-        <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-        <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-        <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M9.5 9a2.5 2.5 0 1 1 4.4 1.6c-.7.8-1.9 1.5-1.9 2.9" />
-      <path d="M12 17h.01" />
-      <path d="M12 2v2" />
-      <path d="M12 20v2" />
-      <path d="M4.9 4.9l1.4 1.4" />
-      <path d="M17.7 17.7l1.4 1.4" />
-      <path d="M2 12h2" />
-      <path d="M20 12h2" />
-    </svg>
-  );
-}
+import { playTicTacToeTone, playVictoryTone, prepareGameAudio } from '../utils/gameAudio';
 
 function Presentation() {
   const { t } = useI18n();
@@ -114,23 +24,25 @@ function Presentation() {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Live Interactive Duel Simulator inside Hero (Monochrome Stealth + Hyper-Accent: Volt X vs Stark White O)
+  const [simBoard, setSimBoard] = useState<(string | null)[]>(() => [
+    null, null, null,
+    null, 'O', null,
+    null, null, null,
+  ]);
+  const [simStatus, setSimStatus] = useState<string>('Haz tu jugada con X');
+
   useEffect(() => {
     let isCancelled = false;
-
     const loadGames = async () => {
       setIsLoading(true);
       const lobbyGames = await getGames();
-
-      if (isCancelled) {
-        return;
+      if (!isCancelled) {
+        setGames(lobbyGames);
+        setIsLoading(false);
       }
-
-      setGames(lobbyGames);
-      setIsLoading(false);
     };
-
     void loadGames();
-
     return () => {
       isCancelled = true;
     };
@@ -138,189 +50,320 @@ function Presentation() {
 
   const previewGames = useMemo(() => games.slice(0, 3), [games]);
 
+  const handleSimMove = async (index: number) => {
+    if (simBoard[index] !== null) return;
+    await prepareGameAudio();
+    playTicTacToeTone();
+
+    const next = [...simBoard];
+    next[index] = 'X';
+    setSimBoard(next);
+    setSimStatus('Rival calculando respuesta...');
+
+    // Simulate instant real-time response from opponent
+    setTimeout(() => {
+      setSimBoard((current) => {
+        const openIndices = current
+          .map((val, idx) => (val === null ? idx : null))
+          .filter((val): val is number => val !== null);
+
+        if (openIndices.length > 0) {
+          const rivalIdx = openIndices[Math.floor(Math.random() * openIndices.length)];
+          const updated = [...current];
+          updated[rivalIdx] = 'O';
+          playTicTacToeTone();
+          setSimStatus('Tu turno: haz clic en una casilla');
+          return updated;
+        } else {
+          playVictoryTone();
+          setSimStatus('¡Duelo de prueba completado!');
+          return current;
+        }
+      });
+    }, 380);
+  };
+
+  const handleResetSim = () => {
+    setSimBoard([null, null, null, null, 'O', null, null, null, null]);
+    setSimStatus('Haz tu jugada con X');
+  };
+
   return (
-    <main className="min-h-screen overflow-x-hidden bg-transparent text-[#edf6ff]">
-      <div className="relative">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(120,230,255,0.16),transparent_22%),radial-gradient(circle_at_80%_15%,rgba(255,123,99,0.14),transparent_18%),radial-gradient(circle_at_50%_55%,rgba(77,163,255,0.1),transparent_28%)]" />
+    <main className="min-h-screen overflow-x-hidden bg-transparent text-[#f4f4f6]">
+      <LandingNav />
 
-        <LandingNav />
+      {/* ─── Hero Command Center ─── */}
+      <section className="relative mx-auto w-full max-w-[1280px] px-6 pt-6 pb-12 max-sm:px-4">
+        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+          {/* Left Column: Proposition & Action */}
+          <div className="grid gap-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#d4ff00]/30 bg-[#d4ff00]/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#d4ff00] w-fit">
+              <SignalIcon size={14} />
+              <span>SALA MULTIJUGADOR EN VIVO</span>
+            </div>
 
-        <section className="relative mx-auto grid w-full max-w-[1280px] gap-8 px-6 pb-10 pt-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-center max-sm:px-4">
-          <div className="grid gap-7">
-            <Badge variant="primary">{t('realtimeMinigames')}</Badge>
-
-            <div className="grid max-w-[760px] gap-5">
-              <h1 className="font-['Rajdhani'] text-[clamp(4.2rem,10vw,8rem)] font-bold uppercase leading-[0.88] tracking-[0.04em] text-[#f6fbff]">
+            <div className="grid gap-4">
+              <h1 className="font-['Rajdhani'] text-[clamp(3.8rem,8.5vw,6.5rem)] font-bold uppercase leading-[0.88] tracking-[0.02em] text-[#f4f4f6]">
                 {t('playLoud')}
-                <span className="block text-[#78e6ff]">{t('climbHarder')}</span>
+                <span className="block text-[#d4ff00] drop-shadow-[0_0_35px_rgba(212,255,0,0.35)]">
+                  {t('climbHarder')}
+                </span>
               </h1>
-              <p className="max-w-[640px] text-[clamp(1.08rem,2vw,1.3rem)] leading-8 text-[#d6e8f8]/72">
+              <p className="max-w-[580px] text-lg sm:text-xl leading-relaxed text-[#8c8c9a]">
                 {t('presentationDescription')}
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-4">
-              <Button onClick={() => navigate('/register')}>
-                <PlayIcon />
-                {t('compete')}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <Button onClick={() => navigate('/register')} className="min-h-[50px] px-7 text-base">
+                <span>{t('compete')}</span>
+                <ArrowRightIcon size={18} />
               </Button>
               <Button
                 variant="surface"
                 onClick={() =>
                   document.getElementById('landing-games')?.scrollIntoView({ behavior: 'smooth' })
                 }
+                className="min-h-[50px] px-6 text-base"
               >
-                <GridIcon />
-                {t('viewArenas')}
+                <GamepadIcon size={18} />
+                <span>{t('viewArenas')}</span>
               </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {featurePillars.map((pillar) => (
-                <article
-                  key={pillar.title}
-                  className="rounded-[26px] border border-[rgba(141,232,255,0.14)] bg-[rgba(6,16,30,0.62)] p-5 backdrop-blur-md"
-                >
-                  <h2 className="text-[1.08rem] font-semibold text-[#f6fbff]">{t(pillar.title as TranslationKey)}</h2>
-                  <p className="mt-2 text-sm leading-6 text-[#d6e8f8]/62">{t(pillar.copy as TranslationKey)}</p>
-                </article>
-              ))}
+            {/* Live Telemetry Pill */}
+            <div className="flex flex-wrap items-center gap-6 pt-3 text-xs font-semibold text-[#8c8c9a]">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#00f5a0] shadow-[0_0_8px_#00f5a0] animate-pulse" />
+                <span className="text-[#f4f4f6] font-bold">142</span> jugadores compitiendo ahora
+              </div>
+              <div className="flex items-center gap-2">
+                <ClockIcon size={15} className="text-[#d4ff00]" />
+                <span>Latencia promedio: <strong className="text-[#d4ff00]">12ms</strong></span>
+              </div>
             </div>
           </div>
 
-          <aside className="relative">
-            <div className="pointer-events-none absolute inset-8 rounded-full bg-[rgba(120,230,255,0.12)] blur-3xl" />
-            <div className="relative overflow-hidden rounded-[34px] border border-[rgba(141,232,255,0.18)] bg-[linear-gradient(180deg,rgba(8,18,34,0.9),rgba(4,10,20,0.96))] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.28)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[0.8rem] uppercase tracking-[0.24em] text-[#97dafc]/62">
-                    {t('livePulse')}
-                  </p>
-                  <h2 className="mt-2 text-[1.9rem] font-bold tracking-[-0.04em]">
-                    {t('arenaPreview')}
-                  </h2>
+          {/* Right Column: Live Interactive Duel Simulator */}
+          <div className="relative">
+            <div className="relative rounded-[26px] border border-white/[0.08] bg-[#111114]/95 p-6 sm:p-7 shadow-[0_24px_70px_rgba(0,0,0,0.8)]">
+              {/* Header */}
+              <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#d4ff00] animate-ping" />
+                  <span className="font-['Rajdhani'] text-sm font-bold uppercase tracking-[0.16em] text-[#d4ff00]">
+                    PROBADOR EN VIVO DE MOTOR
+                  </span>
                 </div>
-                <span className="rounded-full border border-[rgba(134,240,190,0.26)] bg-[rgba(134,240,190,0.08)] px-3 py-1.5 text-xs uppercase tracking-[0.18em] text-[#86f0be]">
-                  142 {t('online')}
-                </span>
+                <button
+                  type="button"
+                  onClick={handleResetSim}
+                  className="font-['Rajdhani'] text-xs font-bold uppercase tracking-wider text-[#8c8c9a] hover:text-[#f4f4f6] transition-colors"
+                >
+                  Reiniciar tablero
+                </button>
               </div>
 
-              <div className="mt-6 grid gap-4">
-                {competitiveLoop.map((step, index) => (
-                  <div
-                    key={step}
-                    className="grid grid-cols-[40px_1fr] items-center gap-4 rounded-[22px] border border-[rgba(141,232,255,0.12)] bg-[rgba(255,255,255,0.03)] px-4 py-3"
+              {/* Status readout */}
+              <p className="mt-4 text-center font-['Rajdhani'] text-sm font-bold uppercase tracking-wide text-[#f4f4f6]">
+                {simStatus}
+              </p>
+
+              {/* Interactive 3x3 Micro-Arena */}
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                {simBoard.map((val, idx) => (
+                  <button
+                    key={`sim-${idx}`}
+                    type="button"
+                    onClick={() => handleSimMove(idx)}
+                    disabled={val !== null}
+                    className={`aspect-square rounded-[16px] border text-3xl font-bold transition-all duration-150 flex items-center justify-center ${
+                      val === 'X'
+                        ? 'border-[#d4ff00] bg-[#d4ff00]/15 text-[#d4ff00] shadow-[0_0_20px_rgba(212,255,0,0.35)]'
+                        : val === 'O'
+                        ? 'border-white/40 bg-white/10 text-[#ffffff] shadow-[0_0_20px_rgba(255,255,255,0.25)]'
+                        : 'border-white/[0.08] bg-[#0d0d10] text-[#8c8c9a] hover:border-[#d4ff00]/50 hover:bg-[#d4ff00]/5 active:scale-95'
+                    }`}
                   >
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(120,230,255,0.12)] text-sm font-bold text-[#90ebff]">
-                      0{index + 1}
-                    </span>
-                    <span className="text-[#ebf6ff]">{t(step as TranslationKey)}</span>
-                  </div>
+                    {val}
+                  </button>
                 ))}
               </div>
 
-              <div className="mt-6 grid gap-3 rounded-[26px] border border-[rgba(255,123,99,0.14)] bg-[linear-gradient(135deg,rgba(255,123,99,0.1),rgba(255,199,106,0.08))] p-5">
-                <p className="text-[0.8rem] uppercase tracking-[0.24em] text-[#ffd8b1]/68">
-                  {t('seasonalFocus')}
-                </p>
-                <p className="text-[1.4rem] font-semibold leading-tight text-[#fff7ef]">
-                  {t('seasonalCopy')}
-                </p>
+              {/* Protocol Spec Footnote */}
+              <div className="mt-5 rounded-[14px] border border-white/[0.08] bg-[#08080a]/90 px-4 py-2.5 flex items-center justify-between text-xs text-[#8c8c9a]">
+                <span>Hub: <strong className="text-[#f4f4f6]">/gameHub</strong></span>
+                <span className="text-[#00f5a0] font-bold">● SIGNALR WEBSOCKET</span>
               </div>
             </div>
-          </aside>
-        </section>
-
-        <section className="relative mx-auto w-full max-w-[1280px] px-6 py-6 max-sm:px-4">
-          <div className="grid gap-4 rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[rgba(5,13,24,0.72)] px-5 py-5 backdrop-blur-md md:grid-cols-2 xl:grid-cols-4">
-            {presentationStats.map((stat) => (
-              <article key={stat.label} className="rounded-[22px] border border-[rgba(141,232,255,0.08)] bg-[rgba(255,255,255,0.02)] px-5 py-4">
-                <strong className="font-['Rajdhani'] text-[clamp(2.4rem,4vw,3.5rem)] leading-none font-bold uppercase tracking-[0.05em] text-[#f7fbff]">
-                  {stat.value}
-                </strong>
-                <p className="mt-2 text-sm uppercase tracking-[0.18em] text-[#d6e8f8]/48">
-                  {t(stat.label as TranslationKey)}
-                </p>
-              </article>
-            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section
-          id="landing-games"
-          className="relative mx-auto grid w-full max-w-[1280px] gap-6 px-6 pb-16 pt-10 max-sm:px-4"
-        >
-          <div className="flex flex-wrap items-end justify-between gap-4">
+      {/* ─── Streaming Telemetry Ribbon ─── */}
+      <section className="border-y border-white/[0.08] bg-[#0d0d10]/90 py-3.5 overflow-hidden">
+        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-8 px-6 text-xs font-bold uppercase tracking-[0.18em] text-[#8c8c9a] max-sm:px-4">
+          <div className="flex items-center gap-2 text-[#d4ff00]">
+            <ZapIcon size={14} />
+            <span>SINCRONIZACIÓN FULL-DUPLEX</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-[#f4f4f6]">
+            <TrophyIcon size={14} />
+            <span>ALGORITMO DE ELO EN TIEMPO REAL</span>
+          </div>
+          <div className="hidden md:flex items-center gap-2 text-[#00f5a0]">
+            <ShieldIcon size={14} />
+            <span>AUTENTICACIÓN SEGURA JWT</span>
+          </div>
+          <div className="flex items-center gap-2 text-[#d4ff00]">
+            <UsersIcon size={14} />
+            <span>EMPAREJAMIENTO 1V1 INSTANTÁNEO</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── The Competitive Protocol ─── */}
+      <section className="relative mx-auto w-full max-w-[1280px] px-6 py-16 max-sm:px-4">
+        <div className="text-center max-w-[640px] mx-auto mb-12">
+          <h2 className="font-['Rajdhani'] text-[clamp(2.4rem,5vw,3.5rem)] font-bold uppercase tracking-[0.03em] text-[#f4f4f6]">
+            ARQUITECTURA DE COMBATE
+          </h2>
+          <p className="mt-2 text-sm text-[#8c8c9a]">
+            Diseñado para eliminar cualquier fricción entre el jugador y la victoria.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="rounded-[22px] border border-white/[0.08] bg-[#111114] p-7 flex flex-col justify-between">
             <div>
-              <p className="text-[0.82rem] uppercase tracking-[0.24em] text-[#97dafc]/68">
-                {t('gameSelection')}
+              <div className="h-12 w-12 rounded-[14px] border border-[#d4ff00]/30 bg-[#d4ff00]/10 text-[#d4ff00] flex items-center justify-center mb-6">
+                <ZapIcon size={24} />
+              </div>
+              <h3 className="font-['Rajdhani'] text-2xl font-bold uppercase tracking-wide text-[#f4f4f6]">
+                Cero Descargas
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#8c8c9a]">
+                Todo el motor corre en el navegador mediante React 19 y Web Audio API. Acceso inmediato a cualquier duelo con un solo clic.
               </p>
-              <h2 className="mt-2 font-['Rajdhani'] text-[3rem] font-bold uppercase tracking-[0.06em] text-[#f6fbff]">
-                {t('chooseArena')}
-              </h2>
             </div>
-            <p className="max-w-[520px] text-[#d6e8f8]/62">
+            <div className="mt-6 pt-4 border-t border-white/[0.08] text-xs font-mono text-[#d4ff00]">
+              LATENCIA: &lt;15MS
+            </div>
+          </div>
+
+          <div className="rounded-[22px] border border-white/[0.08] bg-[#111114] p-7 flex flex-col justify-between">
+            <div>
+              <div className="h-12 w-12 rounded-[14px] border border-white/20 bg-white/[0.06] text-[#f4f4f6] flex items-center justify-center mb-6">
+                <UsersIcon size={24} />
+              </div>
+              <h3 className="font-['Rajdhani'] text-2xl font-bold uppercase tracking-wide text-[#f4f4f6]">
+                Rivales en Vivo
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#8c8c9a]">
+                Hub centralizado SignalR que empareja contendientes en tiempo real, sincroniza estados de turnos y previene jugadas fuera de orden.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-white/[0.08] text-xs font-mono text-[#8c8c9a]">
+              HUB: MULTIPLAYER SIGNALR
+            </div>
+          </div>
+
+          <div className="rounded-[22px] border border-white/[0.08] bg-[#111114] p-7 flex flex-col justify-between">
+            <div>
+              <div className="h-12 w-12 rounded-[14px] border border-[#d4ff00]/30 bg-[#d4ff00]/10 text-[#d4ff00] flex items-center justify-center mb-6">
+                <TrophyIcon size={24} />
+              </div>
+              <h3 className="font-['Rajdhani'] text-2xl font-bold uppercase tracking-wide text-[#f4f4f6]">
+                Prestigio &amp; Ranking
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#8c8c9a]">
+                Cada victoria se registra en el podio global de la plataforma. Analiza tu porcentaje de victorias y escala hacia los primeros puestos.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-white/[0.08] text-xs font-mono text-[#d4ff00]">
+              METRIC: ELO COMPETITIVO
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── The Game Arenas Roster ─── */}
+      <section
+        id="landing-games"
+        className="relative mx-auto w-full max-w-[1280px] px-6 pb-20 pt-6 max-sm:px-4"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <h2 className="font-['Rajdhani'] text-[clamp(2.4rem,5vw,3.5rem)] font-bold uppercase tracking-[0.03em] text-[#f4f4f6]">
+              {t('chooseArena')}
+            </h2>
+            <p className="mt-1 text-sm text-[#8c8c9a]">
               {t('gamesDescription')}
             </p>
           </div>
+        </div>
 
-          {isLoading ? (
-            <div className="flex min-h-[220px] items-center justify-center gap-3 rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[rgba(5,13,24,0.78)] text-[#d6e8f8]/68">
-              <Spinner size={28} />
-              <span>{t('loadingGames')}</span>
-            </div>
-          ) : (
-            <div className="grid gap-5 lg:grid-cols-3">
-              {previewGames.map((game) => (
-                <article
-                  key={game.id}
-                  className="relative overflow-hidden rounded-[30px] border border-[rgba(141,232,255,0.14)] bg-[linear-gradient(180deg,rgba(8,18,34,0.95),rgba(5,12,24,0.98))] p-6"
-                >
-                  <div
-                    className="pointer-events-none absolute right-4 top-4 h-24 w-24 rounded-full blur-3xl"
-                    style={{ backgroundColor: `${game.accentColor}40` }}
-                  />
-
-                  <div
-                    className="relative inline-flex h-14 w-14 items-center justify-center rounded-[20px] border"
-                    style={{
-                      color: game.accentColor,
-                      borderColor: `${game.accentColor}55`,
-                      backgroundColor: `${game.accentColor}20`,
-                    }}
-                  >
-                    {renderGameIcon(game)}
-                  </div>
-
-                  <div className="relative mt-6 flex items-center justify-between gap-3">
-                    <h3 className="text-[1.7rem] font-bold tracking-[-0.04em]">{game.name}</h3>
-                    <span className="text-[0.75rem] uppercase tracking-[0.24em] text-[#d6e8f8]/48">
-                      {t(getGameLabel(game.id) as TranslationKey)}
+        {isLoading ? (
+          <div className="flex min-h-[220px] items-center justify-center gap-3 rounded-[24px] border border-white/[0.08] bg-[#111114] text-[#8c8c9a]">
+            <Spinner size={28} />
+            <span>{t('loadingGames')}</span>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-3">
+            {previewGames.map((game) => (
+              <article
+                key={game.id}
+                className="group relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[#111114] p-6 flex flex-col justify-between transition-all duration-200 hover:border-[#d4ff00] hover:shadow-[0_16px_40px_rgba(212,255,0,0.18)]"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="h-12 w-12 rounded-[14px] border border-white/[0.12] bg-[#17171d] text-[#d4ff00] flex items-center justify-center">
+                      <GamepadIcon size={24} />
+                    </div>
+                    <span className="font-['Rajdhani'] text-xs font-bold uppercase tracking-wider text-[#00f5a0] bg-[#00f5a0]/10 border border-[#00f5a0]/30 px-3 py-1 rounded-full">
+                      DISPONIBLE
                     </span>
                   </div>
 
-                  <p className="relative mt-3 text-sm leading-7 text-[#d6e8f8]/62">
+                  <h3 className="font-['Rajdhani'] text-2xl font-bold uppercase tracking-wide text-[#f4f4f6] group-hover:text-[#d4ff00] transition-colors">
+                    {game.name}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#8c8c9a]">
                     {game.description}
                   </p>
+                </div>
 
-                  <div className="relative mt-6 flex flex-wrap items-center gap-3">
-                    {game.isAvailable ? (
-                      <Badge variant="success">{t('playing', { count: game.playersOnline ?? 0 })}</Badge>
-                    ) : (
-                      <Badge variant="warning" isStatic>
-                        {game.statusLabel}
-                      </Badge>
-                    )}
-                    <span className="text-sm uppercase tracking-[0.18em] text-[#d6e8f8]/40">
-                      {game.isAvailable ? t('readyNow') : t('comingNext')}
-                    </span>
+                <div className="mt-6 pt-5 border-t border-white/[0.08]">
+                  <div className="flex items-center justify-between text-xs text-[#8c8c9a] mb-4">
+                    <span>Formato: <strong className="text-[#f4f4f6]">1 vs 1 Duelo</strong></span>
+                    <span>Duración: <strong className="text-[#f4f4f6]">~2 min</strong></span>
                   </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+                  <Button fullWidth onClick={() => navigate('/register')}>
+                    Entrar a Combatir
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ─── Platform Terminal Footer ─── */}
+      <footer className="border-t border-white/[0.08] bg-[#08080a] py-8 text-xs text-[#8c8c9a]">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-4 px-6 max-sm:px-4">
+          <div className="flex items-center gap-3">
+            <span className="font-['Rajdhani'] text-lg font-bold uppercase tracking-wider text-[#f4f4f6]">
+              PlayHub Arena
+            </span>
+            <span className="text-white/[0.15]">|</span>
+            <span>Real-time Multiplayer Minigames</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#00f5a0]" />
+            <span className="font-mono text-[#00f5a0]">SIGNALR RUNNING</span>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
